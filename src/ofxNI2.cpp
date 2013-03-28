@@ -37,12 +37,21 @@ void Device::setup(const char* uri)
 	assert_error(device.open(uri));
 	
 	device.setDepthColorSyncEnabled(true);
+	ofAddListener(ofEvents().draw, this, &Device::onUpdate);
 }
 
 void Device::exit()
 {
-	waitForThread();
 	device.close();
+	waitForThread();
+}
+
+void Device::onUpdate(ofEventArgs &e)
+{
+	for (int i = 0; i < streams.size(); i++)
+	{
+		streams[i]->is_frame_new = false;
+	}
 }
 
 void Device::start()
@@ -52,25 +61,29 @@ void Device::start()
 
 void Device::threadedFunction()
 {
-	while (isThreadRunning())
+	while (isThreadRunning() && device.isValid())
 	{
 		lock();
 		
 		vector<openni::VideoStream*> ni_streams;
 		openni::Status rc;
 		
-		for (int i = 0; i < this->streams.size(); i++)
+		for (int i = 0; i < streams.size(); i++)
 		{
-			ni_streams.push_back(&streams[i]->stream);
+			if (streams[i]->stream.isValid())
+				ni_streams.push_back(&streams[i]->stream);
 		}
 		
-		int index;
-		rc = openni::OpenNI::waitForAnyStream(&ni_streams[0], ni_streams.size(), &index);
-		
-		if (rc == openni::STATUS_OK && index >= 0)
+		if (ni_streams.size())
 		{
-			openni::VideoFrameRef frame;
-			streams[index]->copyFrame();
+			int index;
+			rc = openni::OpenNI::waitForAnyStream(&ni_streams[0], ni_streams.size(), &index, 1);
+			
+			if (rc == openni::STATUS_OK && index >= 0)
+			{
+				openni::VideoFrameRef frame;
+				streams[index]->copyFrame();
+			}
 		}
 		
 		unlock();
@@ -85,10 +98,12 @@ Stream::~Stream() {}
 bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 {
 	openni_timestamp = 0;
-	opengl_timestamp = 0;
 	
-	assert_error(stream.create(device, sensor_type));
-	assert(stream.isValid());
+	check_error(stream.create(device, sensor_type));
+	if (!stream.isValid())
+	{
+		return false;
+	}
 	
 	device.lock();
 	device.streams.push_back(this);
@@ -99,8 +114,10 @@ bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 
 void Stream::start()
 {
-	assert_error(stream.start());
-	assert(stream.isValid());
+	if (stream.isValid())
+	{
+		assert_error(stream.start());
+	}
 }
 
 void Stream::exit()
@@ -180,16 +197,11 @@ void Stream::copyFrame()
 void Stream::setPixels(openni::VideoFrameRef frame)
 {
 	openni_timestamp = frame.getTimestamp();
-}
-
-void Stream::update()
-{
-	is_new_frame = opengl_timestamp != openni_timestamp;
+	is_frame_new = true;
 }
 
 void Stream::updateTextureIfNeeded()
 {
-	opengl_timestamp = openni_timestamp;
 }
 
 void Stream::draw(float x, float y)
@@ -199,7 +211,7 @@ void Stream::draw(float x, float y)
 
 void Stream::draw(float x, float y, float w, float h)
 {
-	if (is_new_frame)
+	if (isFrameNew())
 		updateTextureIfNeeded();
 
 	if (tex.isAllocated())
@@ -249,6 +261,8 @@ void IrStream::setPixels(openni::VideoFrameRef frame)
 
 void IrStream::updateTextureIfNeeded()
 {
+	if (!pix.isAllocated()) return;
+	
 	if (!tex.isAllocated()
 		|| tex.getWidth() != getWidth()
 		|| tex.getHeight() != getHeight())
@@ -261,6 +275,53 @@ void IrStream::updateTextureIfNeeded()
 	Stream::updateTextureIfNeeded();
 }
 
+// ColorStream
+
+void ColorStream::setPixels(openni::VideoFrameRef frame)
+{
+	Stream::setPixels(frame);
+	
+	openni::VideoMode m = frame.getVideoMode();
+	
+	int w = m.getResolutionX();
+	int h = m.getResolutionY();
+	int num_pixels = w * h;
+	
+	pix.allocate(w, h, 3);
+	
+	if (m.getPixelFormat() == openni::PIXEL_FORMAT_RGB888)
+	{
+		const unsigned char *src = (const unsigned char*)frame.getData();
+		unsigned char *dst = pix.getPixels();
+		
+		for (int i = 0; i < num_pixels; i++)
+		{
+			dst[0] = src[0];
+			dst[1] = src[1];
+			dst[2] = src[2];
+			src += 3;
+			dst += 3;
+		}
+	}
+}
+
+void ColorStream::updateTextureIfNeeded()
+{
+	if (!pix.isAllocated()) return;
+	
+	if (!tex.isAllocated()
+		|| tex.getWidth() != getWidth()
+		|| tex.getHeight() != getHeight())
+	{
+		tex.allocate(getWidth(), getHeight(), GL_RGB);
+	}
+	
+	tex.loadData(pix);
+	
+	Stream::updateTextureIfNeeded();
+}
+
+
 // DepthStream
 
 void DepthStream::setPixels(openni::VideoFrameRef frame)
@@ -270,11 +331,34 @@ void DepthStream::setPixels(openni::VideoFrameRef frame)
 	const unsigned short *pixels = (const unsigned short*)frame.getData();
 	int w = frame.getVideoMode().getResolutionX();
 	int h = frame.getVideoMode().getResolutionY();
-	pix.setFromPixels(pixels, w, h, OF_IMAGE_GRAYSCALE);
+	int num_pixels = w * h;
+	raw.setFromPixels(pixels, w, h, OF_IMAGE_GRAYSCALE);
+	
+	pix.allocate(w, h, 1);
+	
+	{
+		const unsigned short *src = pixels;
+		unsigned char *dst = pix.getPixels();
+		
+		float d = 1. / (far_clip - near_clip);
+		
+		unsigned short m_min = INT_MAX, m_max = INT_MIN;
+		for (int i = 0; i < num_pixels; i++)
+		{
+			float p = ((float)((float)*src - near_clip) * d);
+			if (p < 0) p = 0;
+			if (p > 1) p = 1;
+			*dst = p * 255;
+			src++;
+			dst++;
+		}
+	}
 }
 
 void DepthStream::updateTextureIfNeeded()
 {
+	if (!pix.isAllocated()) return;
+	
 	if (color_mode == RAW)
 	{
 		if (!tex.isAllocated()
@@ -298,39 +382,13 @@ void DepthStream::updateTextureIfNeeded()
 	{
 		if (!tex.isAllocated()
 			|| tex.getWidth() != getWidth()
-			|| tex.getHeight() != getHeight())
+			|| tex.getHeight() != getHeight()
+			|| tex.getTextureData().glType != GL_LUMINANCE)
 		{
-			tex.allocate(getWidth(), getHeight(), GL_RGB);
+			tex.allocate(getWidth(), getHeight(), GL_LUMINANCE);
 		}
 
-		ofPixels temp;
-		temp.allocate(getWidth(), getHeight(), 3);
-		
-		openni::VideoMode m = stream.getVideoMode();
-		
-		int w = m.getResolutionX();
-		int h = m.getResolutionY();
-		int num_pixels = w * h;
-		
-		int min = stream.getMinPixelValue();
-		int max = stream.getMaxPixelValue();
-		float d = 1. / (max - min);
-		
-		const unsigned short *src = (const unsigned short*)pix.getPixels();
-		unsigned char *dst = temp.getPixels();
-		
-		for (int i = 0; i < num_pixels; i++)
-		{
-			int p = (1 - (float)(*src - min) * d) * 255;
-			p = ofClamp(p, 0, 255);
-			dst[0] = p;
-			dst[1] = p;
-			dst[2] = p;
-			dst += 3;
-			src++;
-		}
-		
-		tex.loadData(temp);
+		tex.loadData(pix);
 	}
 	else if (color_mode == COLOR)
 	{
@@ -350,18 +408,12 @@ void DepthStream::updateTextureIfNeeded()
 		int h = m.getResolutionY();
 		int num_pixels = w * h;
 		
-		int min = stream.getMinPixelValue();
-		int max = stream.getMaxPixelValue();
-		float d = 1. / (max - min);
-		
-		const unsigned short *src = (const unsigned short*)pix.getPixels();
+		const unsigned char *src = (const unsigned char*)pix.getPixels();
 		unsigned char *dst = temp.getPixels();
 		
 		for (int i = 0; i < num_pixels; i++)
 		{
-			int p = ((float)(*src - min) * d) * 255;
-			p = ofClamp(p, 0, 255);
-			ofColor c = ofColor::fromHsb(p, 255, 255);
+			ofColor c = ofColor::fromHsb(*src, 255, 255);
 			dst[0] = c.r;
 			dst[1] = c.g;
 			dst[2] = c.b;

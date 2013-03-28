@@ -33,6 +33,8 @@ protected:
 	vector<ofxNI2::Stream*> streams;
 	
 	void threadedFunction();
+	
+	void onUpdate(ofEventArgs &e);
 };
 
 class ofxNI2::Stream
@@ -47,8 +49,6 @@ public:
 	
 	void start();
 	
-	void update();
-	
 	int getWidth() const;
 	int getHeight() const;
 	
@@ -59,7 +59,7 @@ public:
 	int getFps();
 	bool setFps(int v);
 	
-	bool isFrameNew() const { return is_new_frame; }
+	inline bool isFrameNew() const { return is_frame_new; }
 
 	void draw(float x = 0, float y = 0);
 	void draw(float x, float y, float w, float h);
@@ -69,8 +69,8 @@ public:
 protected:
 
 	openni::VideoStream stream;
-	uint64_t openni_timestamp, opengl_timestamp;
-	bool is_new_frame;
+	uint64_t openni_timestamp;
+	bool is_frame_new;
 	
 	ofTexture tex;
 	
@@ -94,12 +94,35 @@ public:
 	
 	void updateTextureIfNeeded();
 	
+	const ofPixels& getPixelsRef() const { return pix; }
+	
 protected:
 
 	ofPixels pix;
 	void setPixels(openni::VideoFrameRef frame);
 
 };
+
+class ofxNI2::ColorStream : public ofxNI2::Stream
+{
+public:
+	
+	bool setup(ofxNI2::Device &device)
+	{
+		return Stream::setup(device, openni::SENSOR_COLOR);
+	}
+	
+	void updateTextureIfNeeded();
+	
+	const ofPixels& getPixelsRef() const { return pix; }
+	
+protected:
+	
+	ofPixels pix;
+	void setPixels(openni::VideoFrameRef frame);
+	
+};
+
 
 class ofxNI2::DepthStream : public ofxNI2::Stream
 {
@@ -114,17 +137,33 @@ public:
 	
 	bool setup(ofxNI2::Device &device)
 	{
-		color_mode = COLOR;
+		near_clip = 500;
+		far_clip = 4000;
+		
+		color_mode = GRAYSCALE;
 		return Stream::setup(device, openni::SENSOR_DEPTH);
 	}
 	
 	void updateTextureIfNeeded();
 	
+	const ofPixels& getPixelsRef() const { return pix; }
+	const ofShortPixels& getRawPixelsRef() const { return raw; }
+	
+	void setDepthClipping(float nearClip=500, float farClip=4000)
+	{
+		near_clip = nearClip;
+		far_clip = farClip;
+	}
+	
 protected:
 	
 	ColorMode color_mode;
 	
-	ofShortPixels pix;
+	ofPixels pix;
+	ofShortPixels raw;
+	
+	float near_clip, far_clip;
+	
 	void setPixels(openni::VideoFrameRef frame);
 
 };
