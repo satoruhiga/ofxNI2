@@ -23,6 +23,8 @@ public:
 	void setup(const char* uri = openni::ANY_DEVICE);
 	void exit();
 	
+	void update();
+	
 	void start();
 	
 	operator const openni::Device&() const { return device; }
@@ -34,7 +36,7 @@ protected:
 	
 	void threadedFunction();
 	
-	void onUpdate(ofEventArgs &e);
+
 };
 
 class ofxNI2::Stream
@@ -55,9 +57,13 @@ public:
 	bool setSize(int width, int height);
 	bool setWidth(int v);
 	bool setHeight(int v);
+	ofTexture& getTextureReference() { return tex; }
 	
 	int getFps();
 	bool setFps(int v);
+	
+	void setMirror(bool v = true);
+	bool getMirror();
 	
 	inline bool isFrameNew() const { return is_frame_new; }
 
@@ -70,7 +76,7 @@ protected:
 
 	openni::VideoStream stream;
 	uint64_t openni_timestamp;
-	bool is_frame_new;
+	bool is_frame_new, texture_needs_update;
 	
 	ofTexture tex;
 	
@@ -128,41 +134,45 @@ class ofxNI2::DepthStream : public ofxNI2::Stream
 {
 public:
 	
-	enum ColorMode
-	{
-		RAW,
-		GRAYSCALE,
-		COLOR
-	};
-	
 	bool setup(ofxNI2::Device &device)
 	{
-		near_clip = 500;
-		far_clip = 4000;
-		
-		color_mode = GRAYSCALE;
 		return Stream::setup(device, openni::SENSOR_DEPTH);
 	}
 	
 	void updateTextureIfNeeded();
 	
-	const ofPixels& getPixelsRef() const { return pix; }
-	const ofShortPixels& getRawPixelsRef() const { return raw; }
+	const ofShortPixels& getPixelsRef() const { return pix; }
+
+	// shader
 	
-	void setDepthClipping(float nearClip=500, float farClip=4000)
+	class DepthShader : public ofShader
 	{
-		near_clip = nearClip;
-		far_clip = farClip;
-	}
+	public:
+		
+		void setup();
+		
+	protected:
+		
+		virtual string getShaderCode() const = 0;
+	};
 	
+	class Grayscale : public DepthShader
+	{
+	public:
+		
+		Grayscale() : min_value(50), max_value(10000) {}
+		
+		void begin();
+		
+	protected:
+		
+		float min_value, max_value;
+		string getShaderCode() const;
+	};
+
 protected:
 	
-	ColorMode color_mode;
-	
-	ofPixels pix;
-	ofShortPixels raw;
-	
-	float near_clip, far_clip;
+	ofShortPixels pix;
 	
 	void setPixels(openni::VideoFrameRef frame);
 

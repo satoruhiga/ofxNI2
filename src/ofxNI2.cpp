@@ -21,8 +21,17 @@ namespace ofxNI2
 		if (inited) return;
 		inited = true;
 		
-		setenv("OPENNI2_DRIVERS_PATH", "data/OpenNI2/lib/Drivers", 1);
-		assert_error(openni::OpenNI::initialize());
+		if (ofFile::doesFileExist("OpenNI2"))
+		{
+			string path = ofToDataPath("OpenNI2/lib/Drivers");
+			setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
+			assert_error(openni::OpenNI::initialize());
+		}
+		else
+		{
+			ofLogError("ofxNI2") << "data/OpenNI2 folder not found";
+			ofExit(-1);
+		}
 	}
 }
 
@@ -34,10 +43,9 @@ void Device::setup(const char* uri)
 {
 	ofxNI2::init();
 	
-	assert_error(device.open(uri));
+	assert_error(device.open(uri)); 
 	
 	device.setDepthColorSyncEnabled(true);
-	ofAddListener(ofEvents().draw, this, &Device::onUpdate);
 }
 
 void Device::exit()
@@ -46,12 +54,16 @@ void Device::exit()
 	waitForThread();
 }
 
-void Device::onUpdate(ofEventArgs &e)
+void Device::update()
 {
+	lock();
+	
 	for (int i = 0; i < streams.size(); i++)
 	{
 		streams[i]->is_frame_new = false;
 	}
+	
+	unlock();
 }
 
 void Device::start()
@@ -83,6 +95,8 @@ void Device::threadedFunction()
 			{
 				openni::VideoFrameRef frame;
 				streams[index]->copyFrame();
+				streams[index]->is_frame_new = true;
+				streams[index]->texture_needs_update = true;
 			}
 		}
 		
@@ -108,6 +122,8 @@ bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 	device.lock();
 	device.streams.push_back(this);
 	device.unlock();
+	
+	setMirror(false);
 	
 	return true;
 }
@@ -181,6 +197,16 @@ bool Stream::setFps(int v)
 	return false;
 }
 
+void Stream::setMirror(bool v)
+{
+	stream.setMirroringEnabled(v);
+}
+
+bool Stream::getMirror()
+{
+	return stream.getMirroringEnabled();
+}
+
 void Stream::copyFrame()
 {
 	openni::Status rc;
@@ -197,11 +223,11 @@ void Stream::copyFrame()
 void Stream::setPixels(openni::VideoFrameRef frame)
 {
 	openni_timestamp = frame.getTimestamp();
-	is_frame_new = true;
 }
 
 void Stream::updateTextureIfNeeded()
 {
+	texture_needs_update = false;
 }
 
 void Stream::draw(float x, float y)
@@ -211,7 +237,7 @@ void Stream::draw(float x, float y)
 
 void Stream::draw(float x, float y, float w, float h)
 {
-	if (isFrameNew())
+	if (texture_needs_update)
 		updateTextureIfNeeded();
 
 	if (tex.isAllocated())
@@ -332,99 +358,79 @@ void DepthStream::setPixels(openni::VideoFrameRef frame)
 	int w = frame.getVideoMode().getResolutionX();
 	int h = frame.getVideoMode().getResolutionY();
 	int num_pixels = w * h;
-	raw.setFromPixels(pixels, w, h, OF_IMAGE_GRAYSCALE);
-	
-	pix.allocate(w, h, 1);
-	
-	{
-		const unsigned short *src = pixels;
-		unsigned char *dst = pix.getPixels();
-		
-		float d = 1. / (far_clip - near_clip);
-		
-		unsigned short m_min = INT_MAX, m_max = INT_MIN;
-		for (int i = 0; i < num_pixels; i++)
-		{
-			float p = ((float)((float)*src - near_clip) * d);
-			if (p < 0) p = 0;
-			if (p > 1) p = 1;
-			*dst = p * 255;
-			src++;
-			dst++;
-		}
-	}
+	pix.setFromPixels(pixels, w, h, OF_IMAGE_GRAYSCALE);
 }
 
 void DepthStream::updateTextureIfNeeded()
 {
 	if (!pix.isAllocated()) return;
 	
-	if (color_mode == RAW)
+	if (!tex.isAllocated()
+		|| tex.getWidth() != getWidth()
+		|| tex.getHeight() != getHeight()
+		|| tex.getTextureData().pixelType != GL_SHORT)
 	{
-		if (!tex.isAllocated()
-			|| tex.getWidth() != getWidth()
-			|| tex.getHeight() != getHeight()
-			|| tex.getTextureData().pixelType != GL_SHORT)
-		{
-			static ofTextureData data;
-			
-			data.pixelType = GL_SHORT;
-			data.glType = GL_LUMINANCE;
-			data.width = getWidth();
-			data.height = getHeight();
-			
-			tex.allocate(data);
-		}
-
-		tex.loadData(pix);
+		static ofTextureData data;
+		
+		data.pixelType = GL_SHORT;
+		data.glType = GL_LUMINANCE;
+		data.width = getWidth();
+		data.height = getHeight();
+		
+		tex.allocate(data);
 	}
-	else if (color_mode == GRAYSCALE)
-	{
-		if (!tex.isAllocated()
-			|| tex.getWidth() != getWidth()
-			|| tex.getHeight() != getHeight()
-			|| tex.getTextureData().glType != GL_LUMINANCE)
-		{
-			tex.allocate(getWidth(), getHeight(), GL_LUMINANCE);
-		}
 
-		tex.loadData(pix);
-	}
-	else if (color_mode == COLOR)
-	{
-		if (!tex.isAllocated()
-			|| tex.getWidth() != getWidth()
-			|| tex.getHeight() != getHeight())
-		{
-			tex.allocate(getWidth(), getHeight(), GL_RGB);
-		}
-
-		ofPixels temp;
-		temp.allocate(getWidth(), getHeight(), 3);
-		
-		openni::VideoMode m = stream.getVideoMode();
-		
-		int w = m.getResolutionX();
-		int h = m.getResolutionY();
-		int num_pixels = w * h;
-		
-		const unsigned char *src = (const unsigned char*)pix.getPixels();
-		unsigned char *dst = temp.getPixels();
-		
-		for (int i = 0; i < num_pixels; i++)
-		{
-			ofColor c = ofColor::fromHsb(*src, 255, 255);
-			dst[0] = c.r;
-			dst[1] = c.g;
-			dst[2] = c.b;
-			dst += 3;
-			src++;
-		}
-		
-		tex.loadData(temp);
-
-	}
+	tex.loadData(pix);
 	
 	Stream::updateTextureIfNeeded();
+}
+
+
+void DepthStream::DepthShader::setup()
+{
+	setupShaderFromSource(GL_FRAGMENT_SHADER, getShaderCode());
+	linkProgram();
+}
+
+string DepthStream::Grayscale::getShaderCode() const
+{
+#define _S(src) #src
+	
+	const char *fs = _S(
+		uniform sampler2DRect tex;
+		uniform float min_value;
+		uniform float max_value;
+
+		void main()
+		{
+			float c = texture2DRect(tex, gl_TexCoord[0].xy).r;
+			
+			c -= min_value;
+			if (c > 0.)
+			{
+				c /= max_value;
+				if (c > 1.)
+					c = 1.;
+			}
+			else
+			{
+				c = 0.;
+			}
+			
+			gl_FragColor = gl_Color * vec4(c, c, c, 1.);
+		}
+	);
+#undef _S
+	
+	return fs;
+}
+
+void DepthStream::Grayscale::begin()
+{
+	const float dd = 1. / numeric_limits<unsigned short>::max();
+	
+	DepthStream::DepthShader::begin();
+	setUniform1f("min_value", dd * min_value);
+	setUniform1f("max_value", dd * max_value);
 }
 

@@ -64,7 +64,7 @@ void testApp::draw()
 //--------------------------------------------------------------
 void testApp::keyPressed(int key)
 {
-
+	depth.setDepthClipping(500, ofMap(ofGetMouseX(), 0, ofGetWidth(), 0, 4000));
 }
 
 //--------------------------------------------------------------
