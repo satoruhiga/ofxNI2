@@ -50,82 +50,47 @@ void Device::setup(const char* uri)
 
 void Device::exit()
 {
+	for (int i = 0; i < streams.size(); i++)
+		streams[i]->exit();
+	
+	streams.clear();
 	device.close();
-	waitForThread();
 }
 
 void Device::update()
 {
-	lock();
-	
 	for (int i = 0; i < streams.size(); i++)
 	{
-		streams[i]->is_frame_new = false;
-	}
-	
-	unlock();
-}
-
-void Device::start()
-{
-	startThread();
-}
-
-void Device::threadedFunction()
-{
-	while (isThreadRunning() && device.isValid())
-	{
-		lock();
-		
-		vector<openni::VideoStream*> ni_streams;
-		openni::Status rc;
-		
-		for (int i = 0; i < streams.size(); i++)
-		{
-			if (streams[i]->stream.isValid())
-				ni_streams.push_back(&streams[i]->stream);
-		}
-		
-		if (ni_streams.size())
-		{
-			int index;
-			rc = openni::OpenNI::waitForAnyStream(&ni_streams[0], ni_streams.size(), &index, 1);
-			
-			if (rc == openni::STATUS_OK && index >= 0)
-			{
-				openni::VideoFrameRef frame;
-				streams[index]->copyFrame();
-				streams[index]->is_frame_new = true;
-				streams[index]->texture_needs_update = true;
-			}
-		}
-		
-		unlock();
+		Stream *s = streams[i];
+		s->is_frame_new = false;
 	}
 }
 
 // Stream
 
 Stream::Stream() {}
-Stream::~Stream() {}
+Stream::~Stream() { exit(); }
 
 bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 {
 	openni_timestamp = 0;
 	
 	check_error(stream.create(device, sensor_type));
-	if (!stream.isValid())
-	{
-		return false;
-	}
+	if (!stream.isValid()) return false;
 	
-	device.lock();
 	device.streams.push_back(this);
-	device.unlock();
 	
 	setMirror(false);
 	
+	stream.addNewFrameListener(this);
+	
 	return true;
+}
+
+void Stream::exit()
+{
+	stream.stop();
+	stream.destroy();
 }
 
 void Stream::start()
@@ -136,10 +101,16 @@ void Stream::start()
 	}
 }
 
-void Stream::exit()
+void Stream::onNewFrame(openni::VideoStream&)
 {
-	stream.stop();
-	stream.destroy();
+	openni::VideoFrameRef frame;
+	check_error(stream.readFrame(&frame));
+	setPixels(frame);
+	
+	openni_timestamp = frame.getTimestamp();
+	
+	is_frame_new = true;
+	texture_needs_update = true;
 }
 
 bool Stream::setSize(int width, int height)
@@ -207,19 +178,6 @@ bool Stream::getMirror()
 	return stream.getMirroringEnabled();
 }
 
-void Stream::copyFrame()
-{
-	openni::Status rc;
-	openni::VideoFrameRef frame;
-	
-	rc = stream.readFrame(&frame);
-	assert_error(rc);
-	
-	assert(frame.getCroppingEnabled() == false);
-	
-	setPixels(frame);
-}
-
 void Stream::setPixels(openni::VideoFrameRef frame)
 {
 	openni_timestamp = frame.getTimestamp();
@@ -262,7 +220,7 @@ void IrStream::setPixels(openni::VideoFrameRef frame)
 	if (m.getPixelFormat() == openni::PIXEL_FORMAT_GRAY8)
 	{
 		const unsigned char *src = (const unsigned char*)frame.getData();
-		unsigned char *dst = pix.getPixels();
+		unsigned char *dst = pix.getBackBuffer().getPixels();
 
 		for (int i = 0; i < num_pixels; i++)
 		{
@@ -274,7 +232,7 @@ void IrStream::setPixels(openni::VideoFrameRef frame)
 	else if (m.getPixelFormat() == openni::PIXEL_FORMAT_GRAY16)
 	{
 		const unsigned short *src = (const unsigned short*)frame.getData();
-		unsigned char *dst = pix.getPixels();
+		unsigned char *dst = pix.getBackBuffer().getPixels();
 
 		for (int i = 0; i < num_pixels; i++)
 		{
@@ -283,12 +241,12 @@ void IrStream::setPixels(openni::VideoFrameRef frame)
 			dst++;
 		}
 	}
+	
+	pix.swap();
 }
 
 void IrStream::updateTextureIfNeeded()
 {
-	if (!pix.isAllocated()) return;
-	
 	if (!tex.isAllocated()
 		|| tex.getWidth() != getWidth()
 		|| tex.getHeight() != getHeight())
@@ -296,8 +254,7 @@ void IrStream::updateTextureIfNeeded()
 		tex.allocate(getWidth(), getHeight(), GL_LUMINANCE);
 	}
 	
-	tex.loadData(pix);
-	
+	tex.loadData(pix.getFrontBuffer());
 	Stream::updateTextureIfNeeded();
 }
 
@@ -318,7 +275,7 @@ void ColorStream::setPixels(openni::VideoFrameRef frame)
 	if (m.getPixelFormat() == openni::PIXEL_FORMAT_RGB888)
 	{
 		const unsigned char *src = (const unsigned char*)frame.getData();
-		unsigned char *dst = pix.getPixels();
+		unsigned char *dst = pix.getBackBuffer().getPixels();
 		
 		for (int i = 0; i < num_pixels; i++)
 		{
@@ -329,12 +286,12 @@ void ColorStream::setPixels(openni::VideoFrameRef frame)
 			dst += 3;
 		}
 	}
+	
+	pix.swap();
 }
 
 void ColorStream::updateTextureIfNeeded()
 {
-	if (!pix.isAllocated()) return;
-	
 	if (!tex.isAllocated()
 		|| tex.getWidth() != getWidth()
 		|| tex.getHeight() != getHeight())
@@ -342,8 +299,7 @@ void ColorStream::updateTextureIfNeeded()
 		tex.allocate(getWidth(), getHeight(), GL_RGB);
 	}
 	
-	tex.loadData(pix);
-	
+	tex.loadData(pix.getFrontBuffer());
 	Stream::updateTextureIfNeeded();
 }
 
@@ -358,13 +314,14 @@ void DepthStream::setPixels(openni::VideoFrameRef frame)
 	int w = frame.getVideoMode().getResolutionX();
 	int h = frame.getVideoMode().getResolutionY();
 	int num_pixels = w * h;
-	pix.setFromPixels(pixels, w, h, OF_IMAGE_GRAYSCALE);
+	
+	pix.allocate(w, h, 1);
+	pix.getBackBuffer().setFromPixels(pixels, w, h, OF_IMAGE_GRAYSCALE);
+	pix.swap();
 }
 
 void DepthStream::updateTextureIfNeeded()
 {
-	if (!pix.isAllocated()) return;
-	
 	if (!tex.isAllocated()
 		|| tex.getWidth() != getWidth()
 		|| tex.getHeight() != getHeight()
@@ -380,8 +337,7 @@ void DepthStream::updateTextureIfNeeded()
 		tex.allocate(data);
 	}
 
-	tex.loadData(pix);
-	
+	tex.loadData(pix.getFrontBuffer());
 	Stream::updateTextureIfNeeded();
 }
 

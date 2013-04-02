@@ -9,12 +9,15 @@ namespace ofxNI2
 	class Device;
 	class Stream;
 
+	template <typename PixelType>
+	struct DoubleBuffer;
+	
 	class IrStream;
 	class ColorStream;
 	class DepthStream;
 };
 
-class ofxNI2::Device : public ofThread
+class ofxNI2::Device
 {
 	friend class ofxNI2::Stream;
 	
@@ -25,21 +28,51 @@ public:
 	
 	void update();
 	
-	void start();
-	
 	operator const openni::Device&() const { return device; }
 	
 protected:
 	
 	openni::Device device;
 	vector<ofxNI2::Stream*> streams;
+};
+
+template <typename PixelType>
+struct ofxNI2::DoubleBuffer
+{
+public:
 	
-	void threadedFunction();
+	DoubleBuffer() : front_buffer_index(0), back_buffer_index(1), allocated(false) {}
 	
+	void allocate(int w, int h, int channels)
+	{
+		if (allocated) return;
+		allocated = true;
+		
+		pix[0].allocate(w, h, channels);
+		pix[1].allocate(w, h, channels);
+	}
+	
+	PixelType& getFrontBuffer() { return pix[front_buffer_index]; }
+	const PixelType& getFrontBuffer() const { return pix[front_buffer_index]; }
+	
+	PixelType& getBackBuffer() { return pix[back_buffer_index]; }
+	const PixelType& getBackBuffer() const { return pix[back_buffer_index]; }
+	
+	void swap()
+	{
+		std::swap(front_buffer_index, back_buffer_index);
+	}
+	
+private:
+	
+	PixelType pix[2];
+	int front_buffer_index, back_buffer_index;
+	bool allocated;
 
 };
 
-class ofxNI2::Stream
+
+class ofxNI2::Stream : public openni::VideoStream::NewFrameListener
 {
 	friend class ofxNI2::Device;
 	
@@ -82,11 +115,10 @@ protected:
 	
 	Stream();
 
-	bool setup(ofxNI2::Device &device, openni::SensorType sensor_type = openni::SENSOR_DEPTH);
-	
-	void copyFrame();
-	
+	bool setup(ofxNI2::Device &device, openni::SensorType sensor_type);
 	virtual void setPixels(openni::VideoFrameRef frame);
+	
+	void onNewFrame(openni::VideoStream&);
 };
 
 class ofxNI2::IrStream : public ofxNI2::Stream
@@ -100,11 +132,11 @@ public:
 	
 	void updateTextureIfNeeded();
 	
-	const ofPixels& getPixelsRef() const { return pix; }
+	const ofPixels& getPixelsRef() const { return pix.getFrontBuffer(); }
 	
 protected:
 
-	ofPixels pix;
+	DoubleBuffer<ofPixels> pix;
 	void setPixels(openni::VideoFrameRef frame);
 
 };
@@ -120,11 +152,11 @@ public:
 	
 	void updateTextureIfNeeded();
 	
-	const ofPixels& getPixelsRef() const { return pix; }
+	const ofPixels& getPixelsRef() const { return pix.getFrontBuffer(); }
 	
 protected:
 	
-	ofPixels pix;
+	DoubleBuffer<ofPixels> pix;
 	void setPixels(openni::VideoFrameRef frame);
 	
 };
@@ -141,7 +173,7 @@ public:
 	
 	void updateTextureIfNeeded();
 	
-	const ofShortPixels& getPixelsRef() const { return pix; }
+	const ofShortPixels& getPixelsRef() const { return pix.getFrontBuffer(); }
 
 	// shader
 	
@@ -172,8 +204,6 @@ public:
 
 protected:
 	
-	ofShortPixels pix;
-	
+	DoubleBuffer<ofShortPixels> pix;
 	void setPixels(openni::VideoFrameRef frame);
-
 };
