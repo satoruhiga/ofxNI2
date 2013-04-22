@@ -6,6 +6,8 @@
 
 namespace ofxNI2
 {
+	void init(const string& driver_path = "OpenNI2/lib/Drivers");
+	
 	class Device;
 	class Stream;
 
@@ -28,6 +30,11 @@ public:
 	
 	void update();
 	
+	bool isRegistrationSupported() const;
+	void setEnableRegistration();
+	bool getEnableRegistration() const;
+	
+	operator openni::Device&() { return device; }
 	operator const openni::Device&() const { return device; }
 	
 protected:
@@ -108,7 +115,7 @@ public:
 protected:
 
 	openni::VideoStream stream;
-	uint64_t openni_timestamp;
+	uint64_t openni_timestamp, opengl_timestamp;
 	bool is_frame_new, texture_needs_update;
 	
 	ofTexture tex;
@@ -201,6 +208,8 @@ public:
 		float min_value, max_value;
 		string getShaderCode() const;
 	};
+	
+	ofVec3f getWorldCoordinateAt(int x, int y);
 
 protected:
 	

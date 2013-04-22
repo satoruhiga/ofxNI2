@@ -31,20 +31,16 @@ void testApp::setup()
 		ir.start();
 	}
 	
-	if (color.setup(*device)) // only for kinect device
-	{
-		color.setSize(320, 240);
-		color.setFps(60);
-		color.start();
-	}
-
-	device->start();
+//	if (color.setup(*device)) // only for kinect device
+//	{
+//		color.setSize(320, 240);
+//		color.setFps(60);
+//		color.start();
+//	}
 }
 
 void testApp::exit()
 {
-	ir.exit();
-	depth.exit();
 	device->exit();
 	delete device;
 }
@@ -58,13 +54,13 @@ void testApp::update()
 void testApp::draw()
 {
 	ir.draw();
+//	color.draw();
 	depth.draw(320, 0);
 }
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key)
 {
-	depth.setDepthClipping(500, ofMap(ofGetMouseX(), 0, ofGetWidth(), 0, 4000));
 }
 
 //--------------------------------------------------------------

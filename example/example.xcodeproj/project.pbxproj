@@ -9,9 +9,6 @@
 /* Begin PBXBuildFile section */
 		60E7469117048F9D004BE403 /* libOpenNI2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 60E7468A17048F9D004BE403 /* libOpenNI2.dylib */; };
 		60E7469217048F9D004BE403 /* ofxNI2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60E7468C17048F9D004BE403 /* ofxNI2.cpp */; };
-		60E7469717048FFB004BE403 /* libFreenectDriver.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 60E7469417048FFB004BE403 /* libFreenectDriver.dylib */; };
-		60E7469817048FFB004BE403 /* libOniFile.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 60E7469517048FFB004BE403 /* libOniFile.dylib */; };
-		60E7469917048FFB004BE403 /* libPS1080.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 60E7469617048FFB004BE403 /* libPS1080.dylib */; };
 		BBAB23CB13894F3D00AA2426 /* GLUT.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBAB23BE13894E4700AA2426 /* GLUT.framework */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
 		E45BE97B0E8CC7DD009D7055 /* AGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E45BE9710E8CC7DD009D7055 /* AGL.framework */; };
@@ -87,9 +84,6 @@
 		60E7468A17048F9D004BE403 /* libOpenNI2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libOpenNI2.dylib; sourceTree = "<group>"; };
 		60E7468C17048F9D004BE403 /* ofxNI2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxNI2.cpp; sourceTree = "<group>"; };
 		60E7468D17048F9D004BE403 /* ofxNI2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxNI2.h; sourceTree = "<group>"; };
-		60E7469417048FFB004BE403 /* libFreenectDriver.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libFreenectDriver.dylib; sourceTree = "<group>"; };
-		60E7469517048FFB004BE403 /* libOniFile.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libOniFile.dylib; sourceTree = "<group>"; };
-		60E7469617048FFB004BE403 /* libPS1080.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libPS1080.dylib; sourceTree = "<group>"; };
 		BBAB23BE13894E4700AA2426 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = ../../../libs/glut/lib/osx/GLUT.framework; sourceTree = "<group>"; };
 		E4328143138ABC890047C5CB /* openFrameworksLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openFrameworksLib.xcodeproj; path = ../../../libs/openFrameworksCompiled/project/osx/openFrameworksLib.xcodeproj; sourceTree = SOURCE_ROOT; };
 		E45BE9710E8CC7DD009D7055 /* AGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AGL.framework; path = /System/Library/Frameworks/AGL.framework; sourceTree = "<absolute>"; };
@@ -139,9 +133,6 @@
 				E4C2424910CC5A17004149E2 /* IOKit.framework in Frameworks */,
 				E7E077E515D3B63C0020DFD4 /* CoreVideo.framework in Frameworks */,
 				60E7469117048F9D004BE403 /* libOpenNI2.dylib in Frameworks */,
-				60E7469717048FFB004BE403 /* libFreenectDriver.dylib in Frameworks */,
-				60E7469817048FFB004BE403 /* libOniFile.dylib in Frameworks */,
-				60E7469917048FFB004BE403 /* libPS1080.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,7 +267,6 @@
 		60E7468517048F9D004BE403 /* osx */ = {
 			isa = PBXGroup;
 			children = (
-				60E7469317048FFB004BE403 /* Drivers */,
 				60E7468A17048F9D004BE403 /* libOpenNI2.dylib */,
 			);
 			path = osx;
@@ -289,16 +279,6 @@
 				60E7468D17048F9D004BE403 /* ofxNI2.h */,
 			);
 			path = src;
-			sourceTree = "<group>";
-		};
-		60E7469317048FFB004BE403 /* Drivers */ = {
-			isa = PBXGroup;
-			children = (
-				60E7469417048FFB004BE403 /* libFreenectDriver.dylib */,
-				60E7469517048FFB004BE403 /* libOniFile.dylib */,
-				60E7469617048FFB004BE403 /* libPS1080.dylib */,
-			);
-			path = Drivers;
 			sourceTree = "<group>";
 		};
 		BB4B014C10F69532006C3DED /* addons */ = {

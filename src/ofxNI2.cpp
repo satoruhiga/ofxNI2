@@ -15,21 +15,21 @@ namespace ofxNI2
 		ofLogError("ofxNI2") << openni::OpenNI::getExtendedError();
 	}
 
-	void init()
+	void init(const string& driver_path)
 	{
 		static bool inited = false;
 		if (inited) return;
 		inited = true;
 		
-		if (ofFile::doesFileExist("OpenNI2"))
+		if (ofFile::doesFileExist(driver_path))
 		{
-			string path = ofToDataPath("OpenNI2/lib/Drivers");
+			string path = ofToDataPath(driver_path);
 			setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
 			assert_error(openni::OpenNI::initialize());
 		}
 		else
 		{
-			ofLogError("ofxNI2") << "data/OpenNI2 folder not found";
+			ofLogError("ofxNI2") << driver_path << " folder not found";
 			ofExit(-1);
 		}
 	}
@@ -62,8 +62,24 @@ void Device::update()
 	for (int i = 0; i < streams.size(); i++)
 	{
 		Stream *s = streams[i];
-		s->is_frame_new = false;
+		s->is_frame_new = s->openni_timestamp != s->opengl_timestamp;
+		s->opengl_timestamp = s->openni_timestamp;
 	}
+}
+
+bool Device::isRegistrationSupported() const
+{
+	return device.isImageRegistrationModeSupported(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
+}
+
+void Device::setEnableRegistration()
+{
+	check_error(device.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR));
+}
+
+bool Device::getEnableRegistration() const
+{
+	return device.getImageRegistrationMode() == openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR;
 }
 
 // Stream
@@ -74,6 +90,7 @@ Stream::~Stream() { exit(); }
 bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 {
 	openni_timestamp = 0;
+	opengl_timestamp = 0;
 	
 	check_error(stream.create(device, sensor_type));
 	if (!stream.isValid()) return false;
@@ -109,7 +126,6 @@ void Stream::onNewFrame(openni::VideoStream&)
 	
 	openni_timestamp = frame.getTimestamp();
 	
-	is_frame_new = true;
 	texture_needs_update = true;
 }
 
@@ -348,6 +364,19 @@ void DepthStream::DepthShader::setup()
 	linkProgram();
 }
 
+ofVec3f DepthStream::getWorldCoordinateAt(int x, int y)
+{
+	ofVec3f v;
+	
+	const ofShortPixels& pix = getPixelsRef();
+	const unsigned short *ptr = pix.getPixels();
+	unsigned short z = ptr[pix.getWidth() * y + x];
+	
+	openni::CoordinateConverter::convertDepthToWorld(stream, x, y, z, &v.x, &v.y, &v.z);
+
+	return v;
+}
+
 string DepthStream::Grayscale::getShaderCode() const
 {
 #define _S(src) #src
@@ -389,4 +418,3 @@ void DepthStream::Grayscale::begin()
 	setUniform1f("min_value", dd * min_value);
 	setUniform1f("max_value", dd * max_value);
 }
-
