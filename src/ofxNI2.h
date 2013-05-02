@@ -6,7 +6,7 @@
 
 namespace ofxNI2
 {
-	void init(const string& driver_path = "OpenNI2/lib/Drivers");
+	void init();
 	
 	class Device;
 	class Stream;
@@ -112,6 +112,9 @@ public:
 
 	virtual void updateTextureIfNeeded();
 	
+	openni::VideoStream& operator*() { return stream; }
+	const openni::VideoStream& operator*() const { return stream; }
+	
 protected:
 
 	openni::VideoStream stream;
@@ -139,7 +142,7 @@ public:
 	
 	void updateTextureIfNeeded();
 	
-	const ofPixels& getPixelsRef() const { return pix.getFrontBuffer(); }
+	ofPixels& getPixelsRef() { return pix.getFrontBuffer(); }
 	
 protected:
 
@@ -159,7 +162,7 @@ public:
 	
 	void updateTextureIfNeeded();
 	
-	const ofPixels& getPixelsRef() const { return pix.getFrontBuffer(); }
+	ofPixels& getPixelsRef() { return pix.getFrontBuffer(); }
 	
 protected:
 	
@@ -180,7 +183,7 @@ public:
 	
 	void updateTextureIfNeeded();
 	
-	const ofShortPixels& getPixelsRef() const { return pix.getFrontBuffer(); }
+	ofShortPixels& getPixelsRef() { return pix.getFrontBuffer(); }
 
 	// shader
 	

@@ -15,21 +15,24 @@ namespace ofxNI2
 		ofLogError("ofxNI2") << openni::OpenNI::getExtendedError();
 	}
 
-	void init(const string& driver_path)
+	void init()
 	{
 		static bool inited = false;
 		if (inited) return;
 		inited = true;
+
+		// initialize oF path, don't comment out
+		ofToDataPath(".");
 		
-		if (ofFile::doesFileExist(driver_path))
+		if (ofFile::doesFileExist("Drivers", false))
 		{
-			string path = ofToDataPath(driver_path);
+			string path = "Drivers";
 			setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
 			assert_error(openni::OpenNI::initialize());
 		}
 		else
 		{
-			ofLogError("ofxNI2") << driver_path << " folder not found";
+			ofLogError("ofxNI2") << "libs not found";
 			ofExit(-1);
 		}
 	}
