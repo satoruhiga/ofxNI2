@@ -25,6 +25,8 @@ class ofxNI2::Device
 	
 public:
 	
+	Device() : recorder(NULL) {}
+	
 	void setup(const char* uri = openni::ANY_DEVICE);
 	void exit();
 	
@@ -34,6 +36,10 @@ public:
 	void setEnableRegistration();
 	bool getEnableRegistration() const;
 	
+	bool startRecord(string filename = "", bool allowLossyCompression = false);
+	void stopRecord();
+	bool isRecording() const { return recorder != NULL; }
+	
 	operator openni::Device&() { return device; }
 	operator const openni::Device&() const { return device; }
 	
@@ -41,6 +47,8 @@ protected:
 	
 	openni::Device device;
 	vector<ofxNI2::Stream*> streams;
+	
+	openni::Recorder *recorder;
 };
 
 template <typename PixelType>
@@ -175,7 +183,10 @@ protected:
 class ofxNI2::DepthStream : public ofxNI2::Stream
 {
 public:
-	
+
+	class DepthShader;
+	class Grayscale;
+
 	bool setup(ofxNI2::Device &device)
 	{
 		return Stream::setup(device, openni::SENSOR_DEPTH);
@@ -184,33 +195,7 @@ public:
 	void updateTextureIfNeeded();
 	
 	ofShortPixels& getPixelsRef() { return pix.getFrontBuffer(); }
-
-	// shader
-	
-	class DepthShader : public ofShader
-	{
-	public:
-		
-		void setup();
-		
-	protected:
-		
-		virtual string getShaderCode() const = 0;
-	};
-	
-	class Grayscale : public DepthShader
-	{
-	public:
-		
-		Grayscale() : min_value(50), max_value(10000) {}
-		
-		void begin();
-		
-	protected:
-		
-		float min_value, max_value;
-		string getShaderCode() const;
-	};
+	ofPixels getPixelsRef(int near, int far, bool invert = false);
 	
 	ofVec3f getWorldCoordinateAt(int x, int y);
 
@@ -218,4 +203,30 @@ protected:
 	
 	DoubleBuffer<ofShortPixels> pix;
 	void setPixels(openni::VideoFrameRef frame);
+};
+
+// shader
+class ofxNI2::DepthStream::DepthShader : public ofShader
+{
+public:
+	
+	void setup();
+	
+protected:
+	
+	virtual string getShaderCode() const = 0;
+};
+
+class ofxNI2::DepthStream::Grayscale : public DepthShader
+{
+public:
+	
+	Grayscale() : min_value(50), max_value(10000) {}
+	
+	void begin();
+	
+protected:
+	
+	float min_value, max_value;
+	string getShaderCode() const;
 };

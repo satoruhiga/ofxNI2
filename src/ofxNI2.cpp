@@ -40,7 +40,7 @@ namespace ofxNI2
 
 using namespace ofxNI2;
 
-// Device
+#pragma mark - Device
 
 void Device::setup(const char* uri)
 {
@@ -53,6 +53,8 @@ void Device::setup(const char* uri)
 
 void Device::exit()
 {
+	stopRecord();
+	
 	for (int i = 0; i < streams.size(); i++)
 		streams[i]->exit();
 	
@@ -85,7 +87,43 @@ bool Device::getEnableRegistration() const
 	return device.getImageRegistrationMode() == openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR;
 }
 
-// Stream
+bool Device::startRecord(string filename, bool allowLossyCompression)
+{
+	if (recorder) return;
+
+	if (filename == "")
+		filename = ofToString(time(0)) + ".oni";
+
+	ofLogVerbose("ofxNI2") << "recording started: " << filename;
+	
+	filename = ofToDataPath(filename);
+	
+	recorder = new openni::Recorder;
+	recorder->create(filename.c_str());
+	
+	for (int i = 0; i < streams.size(); i++)
+	{
+		ofxNI2::Stream &s = *streams[i];
+		openni::VideoStream &vs = *s;
+		recorder->attach(vs, allowLossyCompression);
+	}
+	
+	recorder->start();
+	return recorder->isValid();
+}
+
+void Device::stopRecord()
+{
+	if (!recorder) return;
+	
+	recorder->stop();
+	recorder->destroy();
+	
+	delete recorder;
+	recorder = NULL;
+}
+
+#pragma mark - Stream
 
 Stream::Stream() {}
 Stream::~Stream() { exit(); }
@@ -222,7 +260,7 @@ void Stream::draw(float x, float y, float w, float h)
 }
 
 
-// IrStream
+#pragma mark - IrStream
 
 void IrStream::setPixels(openni::VideoFrameRef frame)
 {
@@ -277,7 +315,7 @@ void IrStream::updateTextureIfNeeded()
 	Stream::updateTextureIfNeeded();
 }
 
-// ColorStream
+#pragma mark - ColorStream
 
 void ColorStream::setPixels(openni::VideoFrameRef frame)
 {
@@ -323,7 +361,7 @@ void ColorStream::updateTextureIfNeeded()
 }
 
 
-// DepthStream
+#pragma mark - DepthStream
 
 void DepthStream::setPixels(openni::VideoFrameRef frame)
 {
@@ -360,6 +398,30 @@ void DepthStream::updateTextureIfNeeded()
 	Stream::updateTextureIfNeeded();
 }
 
+ofPixels DepthStream::getPixelsRef(int near, int far, bool invert)
+{
+	int N = getWidth() * getHeight();
+	ofPixels pix;
+	pix.allocate(getWidth(), getHeight(), 1);
+	
+	const unsigned short *src = getPixelsRef().getPixels();
+	unsigned char *dst = pix.getPixels();
+	
+	float inv_range = 1. / (far - near);
+	
+	if (invert)
+		std::swap(near, far);
+	
+	for (int i = 0; i < N; i++)
+	{
+		unsigned short C = *src;
+		*dst = ofMap(C, near, far, 0, 255, true);
+		src++;
+		dst++;
+	}
+	
+	return pix;
+}
 
 void DepthStream::DepthShader::setup()
 {
