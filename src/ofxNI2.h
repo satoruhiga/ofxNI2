@@ -42,7 +42,10 @@ public:
 	
 	operator openni::Device&() { return device; }
 	operator const openni::Device&() const { return device; }
-	
+
+	openni::Device& get() { return device; }
+	const openni::Device& get() const { return device; }
+
 protected:
 	
 	openni::Device device;
@@ -120,9 +123,12 @@ public:
 
 	virtual void updateTextureIfNeeded();
 	
-	openni::VideoStream& operator*() { return stream; }
-	const openni::VideoStream& operator*() const { return stream; }
-	
+	operator openni::VideoStream& () { return stream; }
+	operator const openni::VideoStream& () const { return stream; }
+
+	openni::VideoStream& get() { return stream; }
+	const openni::VideoStream& get() const { return stream; }
+
 protected:
 
 	openni::VideoStream stream;
@@ -130,6 +136,7 @@ protected:
 	bool is_frame_new, texture_needs_update;
 	
 	ofTexture tex;
+	Device *device;
 	
 	Stream();
 

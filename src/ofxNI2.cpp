@@ -104,8 +104,7 @@ bool Device::startRecord(string filename, bool allowLossyCompression)
 	for (int i = 0; i < streams.size(); i++)
 	{
 		ofxNI2::Stream &s = *streams[i];
-		openni::VideoStream &vs = *s;
-		recorder->attach(vs, allowLossyCompression);
+		recorder->attach(s.get(), allowLossyCompression);
 	}
 	
 	recorder->start();
@@ -137,6 +136,7 @@ bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 	if (!stream.isValid()) return false;
 	
 	device.streams.push_back(this);
+	this->device = &device;
 	
 	setMirror(false);
 	
@@ -147,6 +147,10 @@ bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 
 void Stream::exit()
 {
+	device->streams.erase(remove(device->streams.begin(),
+								 device->streams.end(), this),
+						  device->streams.end());
+	
 	stream.stop();
 	stream.destroy();
 }
