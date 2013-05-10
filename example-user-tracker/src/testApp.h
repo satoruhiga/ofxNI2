@@ -3,6 +3,7 @@
 #include "ofMain.h"
 
 #include "ofxNI2.h"
+#include "ofxNiTE2.h"
 
 class testApp : public ofBaseApp
 {
@@ -24,4 +25,5 @@ public:
 	void gotMessage(ofMessage msg);
 	
 	ofxNI2::Device device;
+	ofxNiTE2::UserTracker tracker;
 };

@@ -85,6 +85,8 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 	
 	user_map = userTrackerFrame.getUserMap();
 	
+	users_arr.clear();
+	
 	{
 		const nite::Array<nite::UserData>& users_data = userTrackerFrame.getUsers();
 		for (int i = 0; i < users_data.getSize(); i++)
@@ -118,6 +120,7 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 			}
 			
 			user_ptr->updateUserData(user);
+			users_arr.push_back(user_ptr);
 		}
 	}
 	

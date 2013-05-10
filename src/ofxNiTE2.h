@@ -51,8 +51,8 @@ public:
 	inline bool isLost() const { return userdata.isLost(); }
 	
 	inline size_t getNumJoints() { return NITE_JOINT_COUNT; }
-	const ofNode& getJoint(size_t idx) { return joints[idx]; }
-	const ofNode& getJoint(nite::JointType type) { return joints[(nite::JointType)type]; }
+	const Joint& getJoint(size_t idx) { return joints[idx]; }
+	const Joint& getJoint(nite::JointType type) { return joints[(nite::JointType)type]; }
 	
 	void draw();
 	
@@ -83,6 +83,10 @@ public:
 	
 	ofCamera getOverlayCamera() { return overlay_camera; }
 	
+	size_t getNumUser() const { return users_arr.size(); }
+	User::Ref getUser(size_t idx) { return users_arr.at(idx); }
+	User::Ref getUserByID(nite::UserId id) { return users[id]; }
+	
 	void setSkeletonSmoothingFactor(float factor) { user_tracker.setSkeletonSmoothingFactor(factor); }
 	float getSkeletonSmoothingFactor(float factor) { return user_tracker.getSkeletonSmoothingFactor(); }
 	
@@ -97,6 +101,7 @@ protected:
 	nite::UserMap user_map;
 	
 	map<nite::UserId, User::Ref> users;
+	vector<User::Ref> users_arr;
 	
 	ofMutex *mutex;
 	ofCamera overlay_camera;

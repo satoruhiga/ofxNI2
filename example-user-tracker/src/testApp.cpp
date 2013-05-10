@@ -1,9 +1,7 @@
 #include "testApp.h"
 
-#include "ofxNiTE2.h"
-
-ofxNI2::DepthStream depth;
-ofxNiTE2::UserTracker tracker;
+ofImage depth_image;
+ofEasyCam cam;
 
 //--------------------------------------------------------------
 void testApp::setup()
@@ -12,7 +10,7 @@ void testApp::setup()
 	ofSetVerticalSync(true);
 	ofBackground(0);
 	
-	device.setup();
+	device.setup(ofToDataPath("1368197018.oni").c_str());
 	
 	if (tracker.setup(device))
 	{
@@ -22,6 +20,8 @@ void testApp::setup()
 
 void testApp::exit()
 {
+	tracker.exit();
+	device.exit();
 }
 
 //--------------------------------------------------------------
@@ -33,7 +33,39 @@ void testApp::update()
 //--------------------------------------------------------------
 void testApp::draw()
 {
-	// tracker.draw(0, 0);
+	// draw depth
+	depth_image.setFromPixels(tracker.getPixelsRef(1000, 4000));
+	
+	ofSetColor(255);
+	depth_image.draw(0, 0);
+	
+	// draw in 2D
+	ofPushView();
+	tracker.getOverlayCamera().begin(ofRectangle(0, 0, depth_image.getWidth(), depth_image.getHeight()));
+	ofDrawAxis(100);
+	tracker.draw();
+	tracker.getOverlayCamera().end();
+	ofPopView();
+	
+	// draw in 3D
+	cam.begin();
+	ofDrawAxis(100);
+	tracker.draw();
+	
+	// draw box
+	ofNoFill();
+	ofSetColor(255, 0, 0);
+	for (int i = 0; i < tracker.getNumUser(); i++)
+	{
+		ofxNiTE2::User::Ref user = tracker.getUser(i);
+		const ofxNiTE2::Joint &joint = user->getJoint(nite::JOINT_HEAD);
+		
+		joint.transformGL();
+		ofBox(300);
+		joint.restoreTransformGL();
+	}
+	
+	cam.end();
 }
 
 //--------------------------------------------------------------
