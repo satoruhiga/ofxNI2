@@ -10,7 +10,7 @@ void testApp::setup()
 	ofSetVerticalSync(true);
 	ofBackground(0);
 	
-	device.setup(ofToDataPath("1368197018.oni").c_str());
+	device.setup();
 	
 	if (tracker.setup(device))
 	{
