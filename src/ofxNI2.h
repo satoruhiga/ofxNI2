@@ -3,6 +3,7 @@
 #include "ofMain.h"
 
 #include "OpenNI.h"
+#include <assert.h>
 
 namespace ofxNI2
 {
@@ -116,6 +117,9 @@ public:
 	void setMirror(bool v = true);
 	bool getMirror();
 	
+	inline float getHorizontalFieldOfView() const { return ofRadToDeg(stream.getHorizontalFieldOfView()); }
+	inline float getVerticalFieldOfView() const { return ofRadToDeg(stream.getVerticalFieldOfView()); }
+
 	inline bool isFrameNew() const { return is_frame_new; }
 
 	void draw(float x = 0, float y = 0);

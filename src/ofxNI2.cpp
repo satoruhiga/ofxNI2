@@ -386,11 +386,11 @@ void DepthStream::updateTextureIfNeeded()
 	if (!tex.isAllocated()
 		|| tex.getWidth() != getWidth()
 		|| tex.getHeight() != getHeight()
-		|| tex.getTextureData().pixelType != GL_SHORT)
+		|| tex.getTextureData().pixelType != GL_UNSIGNED_SHORT)
 	{
 		static ofTextureData data;
 		
-		data.pixelType = GL_SHORT;
+		data.pixelType = GL_UNSIGNED_SHORT;
 		data.glType = GL_LUMINANCE;
 		data.width = getWidth();
 		data.height = getHeight();

@@ -131,10 +131,13 @@ public:
 	void setDownsamplingLevel(int level) { downsampling_level = level; }
 	int getDownsamplingLevel() const { return downsampling_level; }
 	
+	ofMesh& getMesh() { return mesh; }
+	
 protected:
 	
 	int downsampling_level;
 	
 	ofMesh mesh;
 	float xzFactor, yzFactor;
+	
 };
