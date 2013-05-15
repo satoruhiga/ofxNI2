@@ -1,5 +1,7 @@
 #include "ofxNiTE2.h"
 
+#include "DepthRemapToRange.h"
+
 namespace ofxNiTE2
 {
 	void init()
@@ -85,6 +87,8 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 	
 	user_map = userTrackerFrame.getUserMap();
 	
+	mutex->lock();
+	
 	users_arr.clear();
 	
 	{
@@ -98,20 +102,13 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 			if (user.isNew())
 			{
 				user_ptr = User::Ref(new User);
-				
-				mutex->lock();
 				users[user.getId()] = user_ptr;
-				mutex->unlock();
-				
 				user_tracker.startSkeletonTracking(user.getId());
 			}
 			else if (user.isLost())
 			{
 				user_tracker.stopSkeletonTracking(user.getId());
-				
-				mutex->lock();
 				users.erase(user.getId());
-				mutex->unlock();
 				continue;
 			}
 			else
@@ -123,6 +120,8 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 			users_arr.push_back(user_ptr);
 		}
 	}
+	
+	mutex->unlock();
 	
 	{
 		openni::VideoFrameRef frame = userTrackerFrame.getDepthFrame();
@@ -140,28 +139,8 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 
 ofPixels UserTracker::getPixelsRef(int near, int far, bool invert)
 {
-	int W = getPixelsRef().getWidth();
-	int H = getPixelsRef().getHeight();
-	int N = W * H;
 	ofPixels pix;
-	pix.allocate(W, H, 1);
-	
-	const unsigned short *src = getPixelsRef().getPixels();
-	unsigned char *dst = pix.getPixels();
-	
-	float inv_range = 1. / (far - near);
-	
-	if (invert)
-		std::swap(near, far);
-	
-	for (int i = 0; i < N; i++)
-	{
-		unsigned short C = *src;
-		*dst = ofMap(C, near, far, 0, 255, true);
-		src++;
-		dst++;
-	}
-	
+	ofxNI2::depthRemapToRange(getPixelsRef(), pix, near, far, invert);
 	return pix;
 }
 

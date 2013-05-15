@@ -1,5 +1,7 @@
 #include "ofxNI2.h"
 
+#include "DepthRemapToRange.h"
+
 namespace ofxNI2
 {
 	void assert_error(openni::Status rc)
@@ -404,26 +406,8 @@ void DepthStream::updateTextureIfNeeded()
 
 ofPixels DepthStream::getPixelsRef(int near, int far, bool invert)
 {
-	int N = getWidth() * getHeight();
 	ofPixels pix;
-	pix.allocate(getWidth(), getHeight(), 1);
-	
-	const unsigned short *src = getPixelsRef().getPixels();
-	unsigned char *dst = pix.getPixels();
-	
-	float inv_range = 1. / (far - near);
-	
-	if (invert)
-		std::swap(near, far);
-	
-	for (int i = 0; i < N; i++)
-	{
-		unsigned short C = *src;
-		*dst = ofMap(C, near, far, 0, 255, true);
-		src++;
-		dst++;
-	}
-	
+	depthRemapToRange(getPixelsRef(), pix, near, far, invert);
 	return pix;
 }
 

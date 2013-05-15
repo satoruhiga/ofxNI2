@@ -153,7 +153,6 @@ protected:
 	
 };
 
-
 class ofxNI2::DepthStream : public ofxNI2::Stream
 {
 public:
