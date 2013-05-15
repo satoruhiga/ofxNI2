@@ -36,14 +36,21 @@ public:
 		bool has_color = color.isAllocated();
 		const float inv_byte = 1. / 255.;
 		
-		mesh.clear();
 		mesh.setMode(OF_PRIMITIVE_POINTS);
 		
 		const int DS = downsampling_level;
 		
+		vector<ofVec3f>& verts = mesh.getVertices();
+		verts.resize((W / DS) * (H / DS));
+		
+		int vert_index = 0;
+		
 		if (has_color)
 		{
 			const unsigned char *color_pix = color.getPixels();
+			
+			vector<ofFloatColor>& cols = mesh.getColors();
+			cols.resize((W / DS) * (H / DS));
 			
 			if (color.getNumChannels() == 1)
 			{
@@ -58,10 +65,12 @@ public:
 						const float normY = y * invH - 0.5;
 						const float X = normX * xzFactor * Z;
 						const float Y = normY * yzFactor * Z;
-						mesh.addVertex(ofVec3f(X, Y, Z));
+						verts[vert_index].set(X, Y, Z);
 						
 						const unsigned char *C = &color_pix[idx];
-						mesh.addColor(ofFloatColor(C[0] * inv_byte));
+						cols[vert_index].set(C[0] * inv_byte);
+						
+						vert_index++;
 					}
 				}
 			}
@@ -78,16 +87,20 @@ public:
 						const float normY = y * invH - 0.5;
 						const float X = normX * xzFactor * Z;
 						const float Y = normY * yzFactor * Z;
-						mesh.addVertex(ofVec3f(X, Y, Z));
+						verts[vert_index].set(X, Y, Z);
 						
 						const unsigned char *C = &color_pix[idx * 3];
-						mesh.addColor(ofFloatColor(C[0] * inv_byte,
-												   C[1] * inv_byte,
-												   C[2] * inv_byte));
+						cols[vert_index].set(C[0] * inv_byte,
+											 C[1] * inv_byte,
+											 C[2] * inv_byte);
+						
+						vert_index++;
 					}
 				}
 			}
 			else throw;
+			
+			mesh.addColors(cols);
 		}
 		else
 		{
@@ -100,7 +113,9 @@ public:
 					float Z = depth_pix[idx];
 					float X = (x * invW - 0.5) * xzFactor * Z;
 					float Y = (y * invH - 0.5) * yzFactor * Z;
-					mesh.addVertex(ofVec3f(X, Y, Z));
+					verts[vert_index].set(X, Y, Z);
+					
+					vert_index++;
 				}
 			}
 		}
