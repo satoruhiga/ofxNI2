@@ -40,7 +40,6 @@ bool UserTracker::setup(ofxNI2::Device &device)
 		
 		float fov = stream.getVerticalFieldOfView();
 		overlay_camera.setFov(ofRadToDeg(fov));
-		overlay_camera.setScale(1, 1, -1);
 		overlay_camera.setNearClip(500);
 		
 		stream.destroy();
@@ -206,7 +205,7 @@ void User::draw()
 	}
 	
 	const nite::Point3f& pos = userdata.getCenterOfMass();
-	ofDrawBitmapString(status_string, pos.x, pos.y, pos.z);
+	ofDrawBitmapString(status_string, pos.x, pos.y, -pos.z);
 }
 
 void User::buildSkeleton()
@@ -296,6 +295,6 @@ void Joint::updateJointData(const nite::SkeletonJoint& data)
 	const nite::Point3f& pos = data.getPosition();
 	const nite::Quaternion& rot = data.getOrientation();
 	
-	setGlobalOrientation(ofQuaternion(rot.x, rot.y, rot.z, rot.w));
-	setGlobalPosition(pos.x, pos.y, pos.z);
+	setGlobalOrientation(ofQuaternion(-rot.x, -rot.y, rot.z, rot.w));
+	setGlobalPosition(pos.x, pos.y, -pos.z);
 }
