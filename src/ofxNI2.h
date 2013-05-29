@@ -25,9 +25,15 @@ class ofxNI2::Device
 	
 public:
 	
-	Device() : recorder(NULL) {}
+	Device();
+	~Device();
 	
-	void setup(const char* uri = openni::ANY_DEVICE);
+	static int listDevices();
+	
+	void setup();
+	void setup(int device_id);
+	void setup(string oni_file_path);
+	
 	void exit();
 	
 	void update();
@@ -39,6 +45,8 @@ public:
 	bool startRecord(string filename = "", bool allowLossyCompression = false);
 	void stopRecord();
 	bool isRecording() const { return recorder != NULL; }
+	
+	void setDepthColorSyncEnabled(bool b = true) { device.setDepthColorSyncEnabled(b); }
 	
 	operator openni::Device&() { return device; }
 	operator const openni::Device&() const { return device; }
@@ -146,6 +154,12 @@ public:
 	
 	ofPixels& getPixelsRef() { return pix.getFrontBuffer(); }
 	
+	void setAutoExposureEnabled(bool yn = true) { stream.getCameraSettings()->setAutoExposureEnabled(true); }
+	bool getAutoExposureEnabled() { return stream.getCameraSettings()->getAutoExposureEnabled(); }
+
+	void setAutoWhiteBalanceEnabled(bool yn = true) { stream.getCameraSettings()->setAutoWhiteBalanceEnabled(true); }
+	bool getAutoWhiteBalanceEnabled() { return stream.getCameraSettings()->getAutoWhiteBalanceEnabled(); }
+
 protected:
 	
 	DoubleBuffer<ofPixels> pix;

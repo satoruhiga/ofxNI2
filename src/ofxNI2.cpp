@@ -44,24 +44,77 @@ using namespace ofxNI2;
 
 #pragma mark - Device
 
-void Device::setup(const char* uri)
+int Device::listDevices()
 {
 	ofxNI2::init();
 	
-	assert_error(device.open(uri)); 
+	openni::Array<openni::DeviceInfo> deviceList;
+	openni::OpenNI::enumerateDevices(&deviceList);
 	
-	device.setDepthColorSyncEnabled(true);
+	for (int i = 0; i < deviceList.getSize(); ++i)
+	{
+		printf("[%d] %s [%s] (%s)\n", i, deviceList[i].getName(), deviceList[i].getVendor(), deviceList[i].getUri());
+	}
+	
+	return deviceList.getSize();
+}
+
+Device::Device() : recorder(NULL)
+{
+}
+
+Device::~Device()
+{
+}
+
+void Device::setup()
+{
+	ofxNI2::init();
+	
+	assert_error(device.open(openni::ANY_DEVICE)); 
+	assert_error(device.setDepthColorSyncEnabled(true));
+}
+
+void Device::setup(int device_id)
+{
+	ofxNI2::init();
+	
+	openni::Array<openni::DeviceInfo> deviceList;
+	openni::OpenNI::enumerateDevices(&deviceList);
+	
+	if (device_id < 0
+		|| device_id >= deviceList.getSize())
+	{
+		ofLogFatalError("ofxNI2::Device") << "invalid device id";
+		
+		listDevices();
+		ofExit();
+	}
+	
+	assert_error(device.open(deviceList[device_id].getUri()));
+	assert_error(device.setDepthColorSyncEnabled(true));
+}
+
+void Device::setup(string oni_file_path)
+{
+	ofxNI2::init();
+	
+	oni_file_path = ofToDataPath(oni_file_path);
+	
+	assert_error(device.open(oni_file_path.c_str()));
+	assert_error(device.setDepthColorSyncEnabled(true));
 }
 
 void Device::exit()
 {
+	if (!device.isValid()) return;
+	
 	stopRecord();
 	
 	for (int i = 0; i < streams.size(); i++)
 		streams[i]->exit();
 	
 	streams.clear();
-	device.close();
 }
 
 void Device::update()
@@ -127,7 +180,7 @@ void Device::stopRecord()
 #pragma mark - Stream
 
 Stream::Stream() {}
-Stream::~Stream() { exit(); }
+Stream::~Stream() {}
 
 bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 {
@@ -149,12 +202,13 @@ bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 
 void Stream::exit()
 {
+	if (!stream.isValid()) return;
+
 	device->streams.erase(remove(device->streams.begin(),
 								 device->streams.end(), this),
 						  device->streams.end());
-	
+
 	stream.stop();
-	stream.destroy();
 }
 
 void Stream::start()
