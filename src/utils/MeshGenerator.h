@@ -19,7 +19,7 @@ public:
 		float fovV = depth_stream.get().getVerticalFieldOfView();
 		
 		xzFactor = tan(fovH * 0.5) * 2;
-		yzFactor = tan(fovV * 0.5) * 2;
+		yzFactor = tan(fovV * 0.5) * -2;
 	}
 	
 	const ofMesh& update(const ofShortPixels& depth, const ofPixels& color = ofPixels())
@@ -65,7 +65,7 @@ public:
 						const float normY = y * invH - 0.5;
 						const float X = normX * xzFactor * Z;
 						const float Y = normY * yzFactor * Z;
-						verts[vert_index].set(X, Y, Z);
+						verts[vert_index].set(X, Y, -Z);
 						
 						const unsigned char *C = &color_pix[idx];
 						cols[vert_index].set(C[0] * inv_byte);
@@ -87,7 +87,7 @@ public:
 						const float normY = y * invH - 0.5;
 						const float X = normX * xzFactor * Z;
 						const float Y = normY * yzFactor * Z;
-						verts[vert_index].set(X, Y, Z);
+						verts[vert_index].set(X, Y, -Z);
 						
 						const unsigned char *C = &color_pix[idx * 3];
 						cols[vert_index].set(C[0] * inv_byte,
@@ -113,7 +113,7 @@ public:
 					float Z = depth_pix[idx];
 					float X = (x * invW - 0.5) * xzFactor * Z;
 					float Y = (y * invH - 0.5) * yzFactor * Z;
-					verts[vert_index].set(X, Y, Z);
+					verts[vert_index].set(X, Y, -Z);
 					
 					vert_index++;
 				}
