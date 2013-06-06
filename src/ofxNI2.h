@@ -5,7 +5,7 @@
 #include "OpenNI.h"
 #include <assert.h>
 
-#include "DoubleBuffer.h"
+#include "utils/DoubleBuffer.h"
 
 namespace ofxNI2
 {
@@ -18,6 +18,8 @@ namespace ofxNI2
 	class ColorStream;
 	class DepthStream;
 };
+
+// device
 
 class ofxNI2::Device
 {
@@ -62,6 +64,8 @@ protected:
 	openni::Recorder *recorder;
 };
 
+// stream
+
 class ofxNI2::Stream : public openni::VideoStream::NewFrameListener
 {
 	friend class ofxNI2::Device;
@@ -94,7 +98,7 @@ public:
 	inline bool isFrameNew() const { return is_frame_new; }
 
 	void draw(float x = 0, float y = 0);
-	void draw(float x, float y, float w, float h);
+	virtual void draw(float x, float y, float w, float h);
 
 	virtual void updateTextureIfNeeded();
 	
@@ -174,10 +178,7 @@ public:
 	class DepthShader;
 	class Grayscale;
 
-	bool setup(ofxNI2::Device &device)
-	{
-		return Stream::setup(device, openni::SENSOR_DEPTH);
-	}
+	bool setup(ofxNI2::Device &device);
 	
 	void updateTextureIfNeeded();
 	
@@ -185,35 +186,64 @@ public:
 	ofPixels getPixelsRef(int near, int far, bool invert = false);
 	
 	ofVec3f getWorldCoordinateAt(int x, int y);
+	
+	inline void draw(float x = 0, float y = 0) { ofxNI2::Stream::draw(x, y); }
+	void draw(float x, float y, float w, float h);
+	
+	template <typename T>
+	inline ofPtr<DepthShader> setupShader();
+	
+	template <typename T>
+	ofPtr<T> getShader() const { return dynamic_pointer_cast<T>(shader); }
 
 protected:
 	
 	DoubleBuffer<ofShortPixels> pix;
 	void setPixels(openni::VideoFrameRef frame);
+	
+	ofPtr<DepthShader> shader;
 };
 
-// shader
+// depth shader
+
 class ofxNI2::DepthStream::DepthShader : public ofShader
 {
 public:
 	
-	void setup();
+	virtual void setup(DepthStream &depth);
+	virtual void begin() { ofShader::begin(); }
+	virtual void end() { ofShader::end(); }
 	
 protected:
 	
 	virtual string getShaderCode() const = 0;
 };
 
+template <typename T>
+inline ofPtr<ofxNI2::DepthStream::DepthShader> ofxNI2::DepthStream::setupShader()
+{
+	shader = ofPtr<ofxNI2::DepthStream::DepthShader>(new T);
+	shader->setup(*this);
+	return shader;
+}
+
 class ofxNI2::DepthStream::Grayscale : public DepthShader
 {
 public:
 	
-	Grayscale() : min_value(50), max_value(10000) {}
+	Grayscale() : near_value(50), far_value(10000) {}
 	
 	void begin();
 	
+	inline void setNear(float near) { near_value = near; }
+	inline float getNear() const { return near_value; }
+	
+	inline void setFar(float far) { far_value = far; }
+	inline float getFar() const { return far_value; }
+	
 protected:
 	
-	float min_value, max_value;
+	float near_value, far_value;
 	string getShaderCode() const;
 };
+

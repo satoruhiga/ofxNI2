@@ -1,6 +1,6 @@
 #include "ofxNiTE2.h"
 
-#include "DepthRemapToRange.h"
+#include "utils/DepthRemapToRange.h"
 
 namespace ofxNiTE2
 {

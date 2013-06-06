@@ -1,6 +1,6 @@
 #include "ofxNI2.h"
 
-#include "DepthRemapToRange.h"
+#include "utils/DepthRemapToRange.h"
 
 namespace ofxNI2
 {
@@ -423,6 +423,12 @@ void ColorStream::updateTextureIfNeeded()
 
 #pragma mark - DepthStream
 
+bool DepthStream::setup(ofxNI2::Device &device)
+{
+	setupShader<Grayscale>();
+	return Stream::setup(device, openni::SENSOR_DEPTH);
+}
+
 void DepthStream::setPixels(openni::VideoFrameRef frame)
 {
 	Stream::setPixels(frame);
@@ -465,7 +471,23 @@ ofPixels DepthStream::getPixelsRef(int near, int far, bool invert)
 	return pix;
 }
 
-void DepthStream::DepthShader::setup()
+void DepthStream::draw(float x, float y, float w, float h)
+{
+	if (shader)
+	{
+		shader->begin();
+		ofxNI2::Stream::draw(x, y, w, h);
+		shader->end();
+	}
+	else
+	{
+		ofxNI2::Stream::draw(x, y, w, h);
+	}
+}
+
+// depth shader
+
+void DepthStream::DepthShader::setup(DepthStream &depth)
 {
 	setupShaderFromSource(GL_FRAGMENT_SHADER, getShaderCode());
 	linkProgram();
@@ -490,17 +512,17 @@ string DepthStream::Grayscale::getShaderCode() const
 	
 	const char *fs = _S(
 		uniform sampler2DRect tex;
-		uniform float min_value;
-		uniform float max_value;
+		uniform float near_value;
+		uniform float far_value;
 
 		void main()
 		{
 			float c = texture2DRect(tex, gl_TexCoord[0].xy).r;
 			
-			c -= min_value;
+			c -= near_value;
 			if (c > 0.)
 			{
-				c /= max_value;
+				c /= far_value;
 				if (c > 1.)
 					c = 1.;
 			}
@@ -522,6 +544,6 @@ void DepthStream::Grayscale::begin()
 	const float dd = 1. / numeric_limits<unsigned short>::max();
 	
 	DepthStream::DepthShader::begin();
-	setUniform1f("min_value", dd * min_value);
-	setUniform1f("max_value", dd * max_value);
+	setUniform1f("near_value", dd * near_value);
+	setUniform1f("far_value", dd * far_value);
 }
