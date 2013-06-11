@@ -453,7 +453,7 @@ void DepthStream::updateTextureIfNeeded()
 		static ofTextureData data;
 		
 		data.pixelType = GL_UNSIGNED_SHORT;
-		data.glType = GL_LUMINANCE;
+		data.glTypeInternal = GL_LUMINANCE16;
 		data.width = getWidth();
 		data.height = getHeight();
 		
