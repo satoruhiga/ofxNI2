@@ -209,6 +209,7 @@ void Stream::exit()
 						  device->streams.end());
 
 	stream.stop();
+	stream.destroy();
 }
 
 void Stream::start()
@@ -459,7 +460,7 @@ void DepthStream::updateTextureIfNeeded()
 		
 		tex.allocate(data);
 	}
-
+	
 	tex.loadData(pix.getFrontBuffer());
 	Stream::updateTextureIfNeeded();
 }
@@ -487,7 +488,7 @@ void DepthStream::draw(float x, float y, float w, float h)
 
 // depth shader
 
-void DepthStream::DepthShader::setup(DepthStream &depth)
+void DepthShader::setup(DepthStream &depth)
 {
 	setupShaderFromSource(GL_FRAGMENT_SHADER, getShaderCode());
 	linkProgram();
@@ -506,7 +507,7 @@ ofVec3f DepthStream::getWorldCoordinateAt(int x, int y)
 	return v;
 }
 
-string DepthStream::Grayscale::getShaderCode() const
+string Grayscale::getShaderCode() const
 {
 #define _S(src) #src
 	
@@ -539,11 +540,11 @@ string DepthStream::Grayscale::getShaderCode() const
 	return fs;
 }
 
-void DepthStream::Grayscale::begin()
+void Grayscale::begin()
 {
 	const float dd = 1. / numeric_limits<unsigned short>::max();
 	
-	DepthStream::DepthShader::begin();
+	DepthShader::begin();
 	setUniform1f("near_value", dd * near_value);
 	setUniform1f("far_value", dd * far_value);
 }

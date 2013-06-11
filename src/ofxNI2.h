@@ -17,6 +17,9 @@ namespace ofxNI2
 	class IrStream;
 	class ColorStream;
 	class DepthStream;
+	
+	class DepthShader;
+	class Grayscale;
 };
 
 // device
@@ -175,9 +178,6 @@ class ofxNI2::DepthStream : public ofxNI2::Stream
 {
 public:
 
-	class DepthShader;
-	class Grayscale;
-
 	bool setup(ofxNI2::Device &device);
 	
 	void updateTextureIfNeeded();
@@ -206,7 +206,7 @@ protected:
 
 // depth shader
 
-class ofxNI2::DepthStream::DepthShader : public ofShader
+class ofxNI2::DepthShader : public ofShader
 {
 public:
 	
@@ -220,14 +220,14 @@ protected:
 };
 
 template <typename T>
-inline ofPtr<ofxNI2::DepthStream::DepthShader> ofxNI2::DepthStream::setupShader()
+inline ofPtr<ofxNI2::DepthShader> ofxNI2::DepthStream::setupShader()
 {
-	shader = ofPtr<ofxNI2::DepthStream::DepthShader>(new T);
+	shader = ofPtr<ofxNI2::DepthShader>(new T);
 	shader->setup(*this);
 	return shader;
 }
 
-class ofxNI2::DepthStream::Grayscale : public DepthShader
+class ofxNI2::Grayscale : public DepthShader
 {
 public:
 	
