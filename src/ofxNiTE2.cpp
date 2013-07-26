@@ -106,6 +106,9 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 			}
 			else if (user.isLost())
 			{
+				// emit lost user event
+				ofNotifyEvent(lostUser, users[user.getId()], this);
+				
 				user_tracker.stopSkeletonTracking(user.getId());
 				users.erase(user.getId());
 				continue;
@@ -117,6 +120,12 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 			
 			user_ptr->updateUserData(user);
 			users_arr.push_back(user_ptr);
+			
+			if (user.isNew())
+			{
+				// emit new user event
+				ofNotifyEvent(newUser, user_ptr, this);
+			}
 		}
 	}
 	

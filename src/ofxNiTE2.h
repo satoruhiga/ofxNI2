@@ -73,6 +73,10 @@ protected:
 class ofxNiTE2::UserTracker : public nite::UserTracker::NewFrameListener
 {
 public:
+	
+	ofEvent<User::Ref> newUser;
+	ofEvent<User::Ref> lostUser;
+	
 	bool setup(ofxNI2::Device &device);
 	void exit();
 	
