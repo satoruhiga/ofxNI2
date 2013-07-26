@@ -30,6 +30,8 @@ class ofxNI2::Device
 	
 public:
 	
+	ofEvent<ofEventArgs> updateDevice;
+	
 	Device();
 	~Device();
 	

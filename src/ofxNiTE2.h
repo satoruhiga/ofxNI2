@@ -101,15 +101,20 @@ protected:
 	
 	ofxNI2::DoubleBuffer<ofShortPixels> pix;
 	
+	ofxNI2::Device *device;
+	
 	nite::UserTracker user_tracker;
 	nite::UserMap user_map;
 	
 	map<nite::UserId, User::Ref> users;
 	vector<User::Ref> users_arr;
-	
+
+	map<nite::UserId, User::Ref> users_back;
+	vector<User::Ref> users_arr_back;
+
 	ofMutex *mutex;
 	ofCamera overlay_camera;
 	
 	void onNewFrame(nite::UserTracker &tracker);
-	
+	void onUpdate(ofEventArgs&);
 };

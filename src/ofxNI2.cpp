@@ -125,6 +125,9 @@ void Device::update()
 		s->is_frame_new = s->openni_timestamp != s->opengl_timestamp;
 		s->opengl_timestamp = s->openni_timestamp;
 	}
+	
+	static ofEventArgs e;
+	ofNotifyEvent(updateDevice, e, this);
 }
 
 bool Device::isRegistrationSupported() const

@@ -30,6 +30,7 @@ bool UserTracker::setup(ofxNI2::Device &device)
 {
 	ofxNiTE2::init();
 	
+	this->device = &device;
 	mutex = new ofMutex;
 	
 	{
@@ -52,11 +53,15 @@ bool UserTracker::setup(ofxNI2::Device &device)
 	user_tracker.addNewFrameListener(this);
 	user_tracker.setSkeletonSmoothingFactor(0.9);
 	
+	ofAddListener(device.updateDevice, this, &UserTracker::onUpdate);
+	
 	return true;
 }
 
 void UserTracker::exit()
 {
+	ofRemoveListener(device->updateDevice, this, &UserTracker::onUpdate);
+	
 	map<nite::UserId, User::Ref>::iterator it = users.begin();
 	while (it != users.end())
 	{
@@ -87,48 +92,51 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 	user_map = userTrackerFrame.getUserMap();
 	
 	mutex->lock();
-	
-	users_arr.clear();
-	
 	{
-		const nite::Array<nite::UserData>& users_data = userTrackerFrame.getUsers();
-		for (int i = 0; i < users_data.getSize(); i++)
+		users_arr_back.clear();
+		
+		map<nite::UserId, User::Ref> &users = users_back;
+		vector<User::Ref> &users_arr = users_arr_back;
+		
 		{
-			const nite::UserData& user = users_data[i];
-			
-			User::Ref user_ptr;
-			
-			if (user.isNew())
+			const nite::Array<nite::UserData>& users_data = userTrackerFrame.getUsers();
+			for (int i = 0; i < users_data.getSize(); i++)
 			{
-				user_ptr = User::Ref(new User);
-				users[user.getId()] = user_ptr;
-				user_tracker.startSkeletonTracking(user.getId());
-			}
-			else if (user.isLost())
-			{
-				// emit lost user event
-				ofNotifyEvent(lostUser, users[user.getId()], this);
+				const nite::UserData& user = users_data[i];
 				
-				user_tracker.stopSkeletonTracking(user.getId());
-				users.erase(user.getId());
-				continue;
-			}
-			else
-			{
-				user_ptr = users[user.getId()];
-			}
-			
-			user_ptr->updateUserData(user);
-			users_arr.push_back(user_ptr);
-			
-			if (user.isNew())
-			{
-				// emit new user event
-				ofNotifyEvent(newUser, user_ptr, this);
+				User::Ref user_ptr;
+				
+				if (user.isNew())
+				{
+					user_ptr = User::Ref(new User);
+					users[user.getId()] = user_ptr;
+					user_tracker.startSkeletonTracking(user.getId());
+				}
+				else if (user.isLost())
+				{
+					// emit lost user event
+					ofNotifyEvent(lostUser, users[user.getId()], this);
+					
+					user_tracker.stopSkeletonTracking(user.getId());
+					users.erase(user.getId());
+					continue;
+				}
+				else
+				{
+					user_ptr = users[user.getId()];
+				}
+				
+				user_ptr->updateUserData(user);
+				users_arr.push_back(user_ptr);
+				
+				if (user.isNew())
+				{
+					// emit new user event
+					ofNotifyEvent(newUser, user_ptr, this);
+				}
 			}
 		}
 	}
-	
 	mutex->unlock();
 	
 	{
@@ -150,6 +158,14 @@ ofPixels UserTracker::getPixelsRef(int near, int far, bool invert)
 	ofPixels pix;
 	ofxNI2::depthRemapToRange(getPixelsRef(), pix, near, far, invert);
 	return pix;
+}
+
+void UserTracker::onUpdate(ofEventArgs&)
+{
+	mutex->lock();
+	users = users_back;
+	users_arr = users_arr_back;
+	mutex->unlock();
 }
 
 void UserTracker::draw()
