@@ -106,11 +106,10 @@ protected:
 	nite::UserTracker user_tracker;
 	nite::UserMap user_map;
 	
+	vector<nite::UserData> users_data;
+	
 	map<nite::UserId, User::Ref> users;
 	vector<User::Ref> users_arr;
-
-	map<nite::UserId, User::Ref> users_back;
-	vector<User::Ref> users_arr_back;
 
 	ofMutex *mutex;
 	ofCamera overlay_camera;

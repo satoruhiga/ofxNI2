@@ -93,49 +93,9 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 	
 	mutex->lock();
 	{
-		users_arr_back.clear();
-		
-		map<nite::UserId, User::Ref> &users = users_back;
-		vector<User::Ref> &users_arr = users_arr_back;
-		
-		{
-			const nite::Array<nite::UserData>& users_data = userTrackerFrame.getUsers();
-			for (int i = 0; i < users_data.getSize(); i++)
-			{
-				const nite::UserData& user = users_data[i];
-				
-				User::Ref user_ptr;
-				
-				if (user.isNew())
-				{
-					user_ptr = User::Ref(new User);
-					users[user.getId()] = user_ptr;
-					user_tracker.startSkeletonTracking(user.getId());
-				}
-				else if (user.isLost())
-				{
-					// emit lost user event
-					ofNotifyEvent(lostUser, users[user.getId()], this);
-					
-					user_tracker.stopSkeletonTracking(user.getId());
-					users.erase(user.getId());
-					continue;
-				}
-				else
-				{
-					user_ptr = users[user.getId()];
-				}
-				
-				user_ptr->updateUserData(user);
-				users_arr.push_back(user_ptr);
-				
-				if (user.isNew())
-				{
-					// emit new user event
-					ofNotifyEvent(newUser, user_ptr, this);
-				}
-			}
-		}
+		const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
+		for (int i = 0; i < users.getSize(); i++)
+			users_data.push_back(users[i]);
 	}
 	mutex->unlock();
 	
@@ -163,23 +123,64 @@ ofPixels UserTracker::getPixelsRef(int near, int far, bool invert)
 void UserTracker::onUpdate(ofEventArgs&)
 {
 	mutex->lock();
-	users = users_back;
-	users_arr = users_arr_back;
+	
+	{
+		users_arr.clear();
+		
+		for (int i = 0; i < users_data.size(); i++)
+		{
+			const nite::UserData& user = users_data[i];
+			
+			User::Ref user_ptr;
+			
+			if (user.isNew())
+			{
+				user_ptr = User::Ref(new User);
+				users[user.getId()] = user_ptr;
+				user_tracker.startSkeletonTracking(user.getId());
+				
+				cout << "new: " << user.getId() << endl;
+			}
+			else if (user.isLost())
+			{
+				cout << "lost: " << user.getId() << endl;
+				
+				// emit lost user event
+				ofNotifyEvent(lostUser, users[user.getId()], this);
+				
+				user_tracker.stopSkeletonTracking(user.getId());
+				users.erase(user.getId());
+				continue;
+			}
+			else
+			{
+				user_ptr = users[user.getId()];
+			}
+			
+			user_ptr->updateUserData(user);
+			users_arr.push_back(user_ptr);
+			
+			if (user.isNew())
+			{
+				// emit new user event
+				ofNotifyEvent(newUser, user_ptr, this);
+			}
+		}
+		
+		users_data.clear();
+	}
+	
 	mutex->unlock();
 }
 
 void UserTracker::draw()
 {
-	mutex->lock();
-	
 	map<nite::UserId, User::Ref>::iterator it = users.begin();
 	while (it != users.end())
 	{
 		it->second->draw();
 		it++;
 	}
-	
-	mutex->unlock();
 }
 
 #pragma mark - User
