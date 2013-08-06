@@ -46,6 +46,8 @@ public:
 	
 	inline nite::UserId getId() const { return userdata.getId(); }
 	
+	ofVec3f getCenterOfMass() const { return centerOfMass; }
+	
 	inline bool isNew() const { return userdata.isNew(); }
 	inline bool isVisible() const { return userdata.isVisible(); }
 	inline bool isLost() const { return userdata.isLost(); }
@@ -65,6 +67,8 @@ protected:
 	nite::UserData userdata;
 	vector<Joint> joints;
 	
+	ofVec3f centerOfMass;
+	
 	void buildSkeleton();
 	void updateUserData(const nite::UserData& data);
 	
@@ -79,6 +83,8 @@ public:
 	
 	bool setup(ofxNI2::Device &device);
 	void exit();
+	
+	void clear();
 	
 	ofShortPixels& getPixelsRef() { return pix.getFrontBuffer(); }
 	ofPixels getPixelsRef(int near, int far, bool invert = false);

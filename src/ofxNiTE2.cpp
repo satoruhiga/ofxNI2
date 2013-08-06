@@ -78,6 +78,20 @@ void UserTracker::exit()
 	}
 }
 
+void UserTracker::clear()
+{
+	for (int i = 0; i < users_data.size(); i++)
+	{
+		const nite::UserData& user = users_data[i];
+		user_tracker.stopSkeletonTracking(user.getId());
+	}
+	
+	users_data.clear();
+	
+	users.clear();
+	users_arr.clear();
+}
+
 void UserTracker::onNewFrame(nite::UserTracker &tracker)
 {
 	nite::UserTrackerFrameRef userTrackerFrame;
@@ -124,6 +138,7 @@ void UserTracker::onUpdate(ofEventArgs&)
 {
 	mutex->lock();
 	
+	if (!users_data.empty())
 	{
 		users_arr.clear();
 		
@@ -132,30 +147,32 @@ void UserTracker::onUpdate(ofEventArgs&)
 			const nite::UserData& user = users_data[i];
 			
 			User::Ref user_ptr;
+			bool has_user = users.find(user.getId()) != users.end();
 			
 			if (user.isNew())
 			{
 				user_ptr = User::Ref(new User);
 				users[user.getId()] = user_ptr;
 				user_tracker.startSkeletonTracking(user.getId());
-				
-				cout << "new: " << user.getId() << endl;
 			}
-			else if (user.isLost())
+			else if (has_user)
 			{
-				cout << "lost: " << user.getId() << endl;
-				
-				// emit lost user event
-				ofNotifyEvent(lostUser, users[user.getId()], this);
-				
-				user_tracker.stopSkeletonTracking(user.getId());
-				users.erase(user.getId());
-				continue;
+				if (user.isLost())
+				{
+					// emit lost user event
+					ofNotifyEvent(lostUser, users[user.getId()], this);
+					
+					user_tracker.stopSkeletonTracking(user.getId());
+					users.erase(user.getId());
+					continue;
+				}
+				else
+				{
+					user_ptr = users[user.getId()];
+				}
 			}
-			else
-			{
-				user_ptr = users[user.getId()];
-			}
+			
+			if (!user_ptr) continue;
 			
 			user_ptr->updateUserData(user);
 			users_arr.push_back(user_ptr);
@@ -221,6 +238,9 @@ void User::updateUserData(const nite::UserData& data)
 	}
 	
 	status_string = ss.str();
+	
+	const nite::Point3f& pos = userdata.getCenterOfMass();
+	centerOfMass.set(pos.x, pos.y, -pos.z);
 }
 
 void User::draw()
@@ -230,8 +250,7 @@ void User::draw()
 		joints[i].draw();
 	}
 	
-	const nite::Point3f& pos = userdata.getCenterOfMass();
-	ofDrawBitmapString(status_string, pos.x, pos.y, -pos.z);
+	ofDrawBitmapString(status_string, centerOfMass);
 }
 
 void User::buildSkeleton()
