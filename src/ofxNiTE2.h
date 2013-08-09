@@ -103,10 +103,10 @@ public:
 	nite::UserTracker get() { return user_tracker; }
 	const nite::UserTracker& get() const { return user_tracker; }
     
-    nite::UserTrackerFrameRef userTrackerFrame; // ayb Andrew add
-    
     inline nite::Plane getFloor() { return userTrackerFrame.getFloor(); }
     inline float getFloorConfidence() { return userTrackerFrame.getFloorConfidence(); }
+	
+	inline nite::UserTrackerFrameRef getFrame() const { return userTrackerFrame; }
 	
 protected:
 	
@@ -116,6 +116,8 @@ protected:
 	
 	nite::UserTracker user_tracker;
 	nite::UserMap user_map;
+	
+	nite::UserTrackerFrameRef userTrackerFrame;
 	
 	vector<nite::UserData> users_data;
 	

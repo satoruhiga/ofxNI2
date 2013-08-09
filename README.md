@@ -1,10 +1,3 @@
-About the fork
-------------
-
-This fork fix some bugs and add some features while ofxNI2 is developped. (thanks a lot for the good work by the way!)
-
-------------
-
 OSX:
 
 Add to Run Script
