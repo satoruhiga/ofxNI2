@@ -94,7 +94,6 @@ void UserTracker::clear()
 
 void UserTracker::onNewFrame(nite::UserTracker &tracker)
 {
-	nite::UserTrackerFrameRef userTrackerFrame;
 	nite::Status rc = tracker.readFrame(&userTrackerFrame);
 	
 	if (rc != nite::STATUS_OK)

@@ -102,6 +102,11 @@ public:
 	
 	nite::UserTracker get() { return user_tracker; }
 	const nite::UserTracker& get() const { return user_tracker; }
+    
+    nite::UserTrackerFrameRef userTrackerFrame; // ayb Andrew add
+    
+    inline nite::Plane getFloor() { return userTrackerFrame.getFloor(); }
+    inline float getFloorConfidence() { return userTrackerFrame.getFloorConfidence(); }
 	
 protected:
 	
