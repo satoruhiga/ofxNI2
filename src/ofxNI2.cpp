@@ -147,7 +147,7 @@ bool Device::getEnableRegistration() const
 
 bool Device::startRecord(string filename, bool allowLossyCompression)
 {
-	if (recorder) return;
+	if (recorder) return false;
 
 	if (filename == "")
 		filename = ofToString(time(0)) + ".oni";
