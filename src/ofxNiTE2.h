@@ -46,7 +46,9 @@ public:
 	
 	inline nite::UserId getId() const { return userdata.getId(); }
 	
-	ofVec3f getCenterOfMass() const { return centerOfMass; }
+	ofVec3f getCenterOfMass() const { return center_of_mass; }
+	ofVec3f getCenterOfBone() const { return center_of_bone; }
+	float getActivity() const { return activity; }
 	
 	inline bool isNew() const { return userdata.isNew(); }
 	inline bool isVisible() const { return userdata.isVisible(); }
@@ -67,7 +69,10 @@ protected:
 	nite::UserData userdata;
 	vector<Joint> joints;
 	
-	ofVec3f centerOfMass;
+	float activity;
+	
+	ofVec3f center_of_mass;
+	ofVec3f center_of_bone;
 	
 	void buildSkeleton();
 	void updateUserData(const nite::UserData& data);

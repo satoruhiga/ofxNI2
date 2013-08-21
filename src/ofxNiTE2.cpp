@@ -239,7 +239,11 @@ void User::updateUserData(const nite::UserData& data)
 	status_string = ss.str();
 	
 	const nite::Point3f& pos = userdata.getCenterOfMass();
-	centerOfMass.set(pos.x, pos.y, -pos.z);
+	center_of_mass.set(pos.x, pos.y, -pos.z);
+	
+	Joint &torso = joints[nite::JOINT_TORSO];
+	activity += (torso.getPosition().distance(center_of_bone) - activity) * 0.1;
+	center_of_bone = torso.getPosition();
 }
 
 void User::draw()
@@ -249,7 +253,7 @@ void User::draw()
 		joints[i].draw();
 	}
 	
-	ofDrawBitmapString(status_string, centerOfMass);
+	ofDrawBitmapString(status_string, center_of_mass);
 }
 
 void User::buildSkeleton()
