@@ -60,6 +60,7 @@ bool UserTracker::setup(ofxNI2::Device &device)
 
 void UserTracker::exit()
 {
+    userTrackerFrame.release();
 	ofRemoveListener(device->updateDevice, this, &UserTracker::onUpdate);
 	
 	map<nite::UserId, User::Ref>::iterator it = users.begin();
