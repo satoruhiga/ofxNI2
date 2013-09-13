@@ -453,9 +453,20 @@ void DepthStream::updateTextureIfNeeded()
 		|| tex.getWidth() != getWidth()
 		|| tex.getHeight() != getHeight())
 	{
+#if OF_VERSION_MINOR <= 7
+		static ofTextureData data;
+		
+		data.pixelType = GL_UNSIGNED_SHORT;
+		data.glTypeInternal = GL_LUMINANCE16;
+		data.width = getWidth();
+		data.height = getHeight();
+		
+		tex.allocate(data);
+#elif OF_VERSION_MINOR > 7
 		tex.allocate(getWidth(), getHeight(), true, GL_LUMINANCE, GL_UNSIGNED_SHORT);
+#endif
 	}
-	
+
 	tex.loadData(pix.getFrontBuffer());
 	Stream::updateTextureIfNeeded();
 }
