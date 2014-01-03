@@ -526,17 +526,7 @@ string Grayscale::getShaderCode() const
 		{
 			float c = texture2DRect(tex, gl_TexCoord[0].xy).r;
 			
-			c -= near_value;
-			if (c > 0.)
-			{
-				c /= far_value;
-				if (c > 1.)
-					c = 1.;
-			}
-			else
-			{
-				c = 0.;
-			}
+			c = (near_value >= far_value) ? 0. : clamp((c-near_value)/(far_value-near_value), 0., 1.);
 			
 			gl_FragColor = gl_Color * vec4(c, c, c, 1.);
 		}
