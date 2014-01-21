@@ -4,17 +4,18 @@
 
 namespace ofxNI2
 {
-	void assert_error(openni::Status rc)
+	bool assert_error(openni::Status rc)
 	{
-		if (rc == openni::STATUS_OK) return;
+		if (rc == openni::STATUS_OK) return true;
 		ofLogError("ofxNI2") << openni::OpenNI::getExtendedError();
 		throw;
 	}
 
-	void check_error(openni::Status rc)
+	bool check_error(openni::Status rc)
 	{
-		if (rc == openni::STATUS_OK) return;
+		if (rc == openni::STATUS_OK) return true;
 		ofLogError("ofxNI2") << openni::OpenNI::getExtendedError();
+		return false;
 	}
 
 	void init()
@@ -67,15 +68,17 @@ Device::~Device()
 {
 }
 
-void Device::setup()
+bool Device::setup()
 {
 	ofxNI2::init();
 	
-	assert_error(device.open(openni::ANY_DEVICE)); 
-	assert_error(device.setDepthColorSyncEnabled(true));
+	if (!check_error(device.open(openni::ANY_DEVICE))) return false;
+	if (!check_error(device.setDepthColorSyncEnabled(true))) return false;
+	
+	return true;
 }
 
-void Device::setup(int device_id)
+bool Device::setup(int device_id)
 {
 	ofxNI2::init();
 	
@@ -88,14 +91,17 @@ void Device::setup(int device_id)
 		ofLogFatalError("ofxNI2::Device") << "invalid device id";
 		
 		listDevices();
-		ofExit();
+		
+		return false;
 	}
 	
-	assert_error(device.open(deviceList[device_id].getUri()));
-	assert_error(device.setDepthColorSyncEnabled(true));
+	if (!check_error(device.open(deviceList[device_id].getUri()))) return false;
+	if (!check_error(device.setDepthColorSyncEnabled(true))) return false;
+	
+	return true;
 }
 
-void Device::setup(string oni_file_path)
+bool Device::setup(string oni_file_path)
 {
 	ofxNI2::init();
 	
@@ -103,6 +109,8 @@ void Device::setup(string oni_file_path)
 	
 	assert_error(device.open(oni_file_path.c_str()));
 	assert_error(device.setDepthColorSyncEnabled(true));
+	
+	return true;
 }
 
 void Device::exit()

@@ -37,9 +37,9 @@ public:
 	
 	static int listDevices();
 	
-	void setup();
-	void setup(int device_id);
-	void setup(string oni_file_path);
+	bool setup();
+	bool setup(int device_id);
+	bool setup(string oni_file_path);
 	
 	void exit();
 	
