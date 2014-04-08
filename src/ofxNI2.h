@@ -89,7 +89,13 @@ public:
 	bool setSize(int width, int height);
 	bool setWidth(int v);
 	bool setHeight(int v);
-	ofTexture& getTextureReference() { return tex; }
+	ofTexture& getTextureReference() {
+		
+		if (texture_needs_update)
+			updateTextureIfNeeded();
+			
+		return tex;
+	}
 	
 	int getFps();
 	bool setFps(int v);
