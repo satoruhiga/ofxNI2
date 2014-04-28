@@ -169,10 +169,10 @@ public:
 	
 	ofPixels& getPixelsRef() { return pix.getFrontBuffer(); }
 	
-	void setAutoExposureEnabled(bool yn = true) { stream.getCameraSettings()->setAutoExposureEnabled(true); }
+	void setAutoExposureEnabled(bool yn = true) { stream.getCameraSettings()->setAutoExposureEnabled(yn); }
 	bool getAutoExposureEnabled() { return stream.getCameraSettings()->getAutoExposureEnabled(); }
 
-	void setAutoWhiteBalanceEnabled(bool yn = true) { stream.getCameraSettings()->setAutoWhiteBalanceEnabled(true); }
+	void setAutoWhiteBalanceEnabled(bool yn = true) { stream.getCameraSettings()->setAutoWhiteBalanceEnabled(yn); }
 	bool getAutoWhiteBalanceEnabled() { return stream.getCameraSettings()->getAutoWhiteBalanceEnabled(); }
 
 protected:
