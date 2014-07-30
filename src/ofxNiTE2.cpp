@@ -13,7 +13,7 @@ namespace ofxNiTE2
 		nite::NiTE::initialize();
 	}
 	
-	void check_error(nite::Status rc)
+	void check_error(nite::Status_ rc)
 	{
 		if (rc == nite::STATUS_OK) return;
 		ofLogError("ofxNiTE2") << openni::OpenNI::getExtendedError();
@@ -95,7 +95,7 @@ void UserTracker::clear()
 
 void UserTracker::onNewFrame(nite::UserTracker &tracker)
 {
-	nite::Status rc = tracker.readFrame(&userTrackerFrame);
+	nite::Status_ rc = tracker.readFrame(&userTrackerFrame);
 	
 	if (rc != nite::STATUS_OK)
 	{

@@ -57,7 +57,7 @@ typedef enum
 	STATUS_ERROR,
 	STATUS_BAD_USER_ID,
 	STATUS_OUT_OF_FLOW
-} Status;
+} Status_;
 
 typedef enum
 {
