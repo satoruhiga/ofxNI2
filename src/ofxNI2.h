@@ -7,6 +7,12 @@
 
 #include "utils/DoubleBuffer.h"
 
+#if defined(TARGET_LINUX)
+    #define ONI_DRIVER_PATH "libs/Drivers"
+#else
+    #define ONI_DRIVER_PATH "Drivers"
+#endif
+
 namespace ofxNI2
 {
 	void init();
