@@ -18,8 +18,8 @@
 *  limitations under the License.                                            *
 *                                                                            *
 *****************************************************************************/
-#ifndef _ONI_C_PROPERTIES_H_
-#define _ONI_C_PROPERTIES_H_
+#ifndef ONICPROPERTIES_H
+#define ONICPROPERTIES_H
 
 // Device properties
 enum
@@ -55,6 +55,8 @@ enum
 	// Camera
 	ONI_STREAM_PROPERTY_AUTO_WHITE_BALANCE		= 100, // OniBool
 	ONI_STREAM_PROPERTY_AUTO_EXPOSURE			= 101, // OniBool
+	ONI_STREAM_PROPERTY_EXPOSURE				= 102, // int
+	ONI_STREAM_PROPERTY_GAIN					= 103, // int
 };
 
 // Device commands (for Invoke)
@@ -63,4 +65,4 @@ enum
 	ONI_DEVICE_COMMAND_SEEK				= 1, // OniSeek
 };
 
-#endif // _ONI_C_PROPERTIES_H_
+#endif // ONICPROPERTIES_H
