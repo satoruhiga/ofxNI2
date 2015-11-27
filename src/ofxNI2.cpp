@@ -475,7 +475,7 @@ void DepthStream::updateTextureIfNeeded()
 		
 		tex.allocate(data);
 #elif OF_VERSION_MINOR > 7
-		tex.allocate(getWidth(), getHeight(), GL_RGBA, true, GL_LUMINANCE, GL_UNSIGNED_SHORT);
+        tex.allocate(pix.getFrontBuffer());
 #endif
 	}
 
