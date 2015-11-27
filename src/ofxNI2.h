@@ -5,6 +5,8 @@
 #include "OpenNI.h"
 #include <assert.h>
 
+//#define HAVE_NITE2
+
 #include "utils/DoubleBuffer.h"
 
 namespace ofxNI2
