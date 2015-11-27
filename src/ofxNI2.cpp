@@ -8,7 +8,7 @@ namespace ofxNI2
 	{
 		if (rc == openni::STATUS_OK) return true;
 		ofLogError("ofxNI2") << openni::OpenNI::getExtendedError();
-		throw;
+		return false;
 	}
 
 	bool check_error(openni::Status rc)
@@ -24,20 +24,24 @@ namespace ofxNI2
 		if (inited) return;
 		inited = true;
 
-		// initialize oF path, don't comment out
-		ofToDataPath(".");
-		
-		//if (ofFile::doesFileExist("Drivers", false))
-		//{
-		//	string path = "Drivers";
-		//	setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
-			assert_error(openni::OpenNI::initialize());
-		//}
-		//else
-		//{
-		//	ofLogError("ofxNI2") << "libs not found";
-		//	ofExit(-1);
-		//}
+        string path;
+#ifndef TARGET_WIN32
+        path = ofFilePath::getCurrentExeDir() + "/Drivers"; // osx / linux
+#else
+        path = ofFilePath::getCurrentExeDir() + "/OpenNI2/Drivers"; // windows
+#endif
+        if (ofFile::doesFileExist(path, false))
+        {
+#ifndef TARGET_WIN32
+            setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
+#endif
+            assert_error(openni::OpenNI::initialize());
+        }
+        else
+        {
+            ofLogError("ofxNI2") << "libs not found";
+            ofExit(-1);
+        }
 	}
 }
 
