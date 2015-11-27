@@ -27,17 +27,17 @@ namespace ofxNI2
 		// initialize oF path, don't comment out
 		ofToDataPath(".");
 		
-		if (ofFile::doesFileExist("Drivers", false))
-		{
-			string path = "Drivers";
-			setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
+		//if (ofFile::doesFileExist("Drivers", false))
+		//{
+		//	string path = "Drivers";
+		//	setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
 			assert_error(openni::OpenNI::initialize());
-		}
-		else
-		{
-			ofLogError("ofxNI2") << "libs not found";
-			ofExit(-1);
-		}
+		//}
+		//else
+		//{
+		//	ofLogError("ofxNI2") << "libs not found";
+		//	ofExit(-1);
+		//}
 	}
 }
 
@@ -479,10 +479,10 @@ void DepthStream::updateTextureIfNeeded()
 	Stream::updateTextureIfNeeded();
 }
 
-ofPixels DepthStream::getPixelsRef(int near, int far, bool invert)
+ofPixels DepthStream::getPixelsRef(int _near, int _far, bool invert)
 {
 	ofPixels pix;
-	depthRemapToRange(getPixelsRef(), pix, near, far, invert);
+	depthRemapToRange(getPixelsRef(), pix, _near, _far, invert);
 	return pix;
 }
 
