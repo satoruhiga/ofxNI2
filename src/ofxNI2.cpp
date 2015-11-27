@@ -8,7 +8,7 @@ namespace ofxNI2
 	{
 		if (rc == openni::STATUS_OK) return true;
 		ofLogError("ofxNI2") << openni::OpenNI::getExtendedError();
-		return false;
+		throw;
 	}
 
 	bool check_error(openni::Status rc)
@@ -112,7 +112,7 @@ bool Device::setup(string oni_file_path)
 	oni_file_path = ofToDataPath(oni_file_path);
 	
 	assert_error(device.open(oni_file_path.c_str()));
-	assert_error(device.setDepthColorSyncEnabled(true));
+	check_error(device.setDepthColorSyncEnabled(true));
 	
 	return true;
 }
