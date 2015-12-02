@@ -5,6 +5,8 @@
 
 #include "NiTE.h"
 
+#ifdef HAVE_NITE2
+
 namespace ofxNiTE2
 {
 	class UserTracker;
@@ -135,3 +137,5 @@ protected:
 	void onNewFrame(nite::UserTracker &tracker);
 	void onUpdate(ofEventArgs&);
 };
+
+#endif

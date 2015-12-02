@@ -2,6 +2,8 @@
 
 #include "utils/DepthRemapToRange.h"
 
+#ifdef HAVE_NITE2
+
 namespace ofxNiTE2
 {
 	void init()
@@ -127,10 +129,10 @@ void UserTracker::onNewFrame(nite::UserTracker &tracker)
 	}
 }
 
-ofPixels UserTracker::getPixelsRef(int near, int far, bool invert)
+ofPixels UserTracker::getPixelsRef(int _near, int _far, bool invert)
 {
 	ofPixels pix;
-	ofxNI2::depthRemapToRange(getPixelsRef(), pix, near, far, invert);
+	ofxNI2::depthRemapToRange(getPixelsRef(), pix, _near, _far, invert);
 	return pix;
 }
 
@@ -347,3 +349,5 @@ void Joint::updateJointData(const nite::SkeletonJoint& data)
 	setGlobalOrientation(ofQuaternion(-rot.x, -rot.y, rot.z, rot.w));
 	setGlobalPosition(pos.x, pos.y, -pos.z);
 }
+
+#endif

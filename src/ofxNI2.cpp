@@ -24,20 +24,24 @@ namespace ofxNI2
 		if (inited) return;
 		inited = true;
 
-		// initialize oF path, don't comment out
-		ofToDataPath(".");
-		
-		if (ofFile::doesFileExist("Drivers", false))
-		{
-			string path = "Drivers";
-			setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
-			assert_error(openni::OpenNI::initialize());
-		}
-		else
-		{
-			ofLogError("ofxNI2") << "libs not found";
-			ofExit(-1);
-		}
+        string path;
+#ifndef TARGET_WIN32
+        path = ofFilePath::getCurrentExeDir() + "/Drivers"; // osx / linux
+#else
+        path = ofFilePath::getCurrentExeDir() + "/OpenNI2/Drivers"; // windows
+#endif
+        if (ofFile::doesFileExist(path, false))
+        {
+#ifndef TARGET_WIN32
+            setenv("OPENNI2_DRIVERS_PATH", path.c_str(), 1);
+#endif
+            assert_error(openni::OpenNI::initialize());
+        }
+        else
+        {
+            ofLogError("ofxNI2") << "libs not found";
+            ofExit(-1);
+        }
 	}
 }
 
@@ -108,7 +112,7 @@ bool Device::setup(string oni_file_path)
 	oni_file_path = ofToDataPath(oni_file_path);
 	
 	assert_error(device.open(oni_file_path.c_str()));
-	assert_error(device.setDepthColorSyncEnabled(true));
+	check_error(device.setDepthColorSyncEnabled(true));
 	
 	return true;
 }
@@ -471,7 +475,7 @@ void DepthStream::updateTextureIfNeeded()
 		
 		tex.allocate(data);
 #elif OF_VERSION_MINOR > 7
-		tex.allocate(getWidth(), getHeight(), GL_RGBA, true, GL_LUMINANCE, GL_UNSIGNED_SHORT);
+        tex.allocate(pix.getFrontBuffer());
 #endif
 	}
 
@@ -479,10 +483,10 @@ void DepthStream::updateTextureIfNeeded()
 	Stream::updateTextureIfNeeded();
 }
 
-ofPixels DepthStream::getPixelsRef(int near, int far, bool invert)
+ofPixels DepthStream::getPixelsRef(int _near, int _far, bool invert)
 {
 	ofPixels pix;
-	depthRemapToRange(getPixelsRef(), pix, near, far, invert);
+	depthRemapToRange(getPixelsRef(), pix, _near, _far, invert);
 	return pix;
 }
 
