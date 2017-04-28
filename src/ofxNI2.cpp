@@ -204,6 +204,8 @@ bool Stream::setup(ofxNI2::Device &device, openni::SensorType sensor_type)
 	
 	check_error(stream.create(device, sensor_type));
 	if (!stream.isValid()) return false;
+	check_error(stream.start());
+	if (!stream.isValid()) return false;
 	
 	device.streams.push_back(this);
 	this->device = &device;
@@ -229,10 +231,6 @@ void Stream::exit()
 
 void Stream::start()
 {
-	if (stream.isValid())
-	{
-		assert_error(stream.start());
-	}
 }
 
 void Stream::onNewFrame(openni::VideoStream&)
